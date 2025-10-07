@@ -1,0 +1,36 @@
+from fastapi import FastAPI
+from .schemas import TradePayload, EvaluateResponse, TeamGrade
+from .cba.validator import validate_trade
+from .services.grading import score_team, letter_grade
+
+app = FastAPI(title="NBA Trade Grader (MVP)")
+
+@app.get("/health")
+def health():
+    return {"ok": True}
+
+@app.post("/trade/validate")
+def trade_validate(payload: TradePayload):
+    return validate_trade(payload.sides)
+
+@app.post("/trade/evaluate", response_model=EvaluateResponse)
+def trade_evaluate(payload: TradePayload):
+    legality = validate_trade(payload.sides)
+
+    grades = []
+    # Build quick lookup of players/picks movement for each side
+    for side in payload.sides:
+        score, breakdown = score_team(
+            players_out=side.players_out,
+            players_in=side.players_in,
+            picks_out=side.picks_out,
+            picks_in=side.picks_in
+        )
+        grades.append(TeamGrade(
+            team=side.team,
+            score_raw=round(score, 3),
+            letter=letter_grade(score),
+            breakdown={k: round(v, 3) for k, v in breakdown.items()}
+        ))
+
+    return EvaluateResponse(legality=legality, grades=grades)

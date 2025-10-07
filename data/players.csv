@@ -1,0 +1,11 @@
+player_id,name,team,salary,age,impact_now,years_left
+101,Player A,LAL,45000000,30,2.5,3
+102,Player B,LAL,12000000,24,0.8,2
+103,Player C,BOS,28000000,28,1.6,2
+104,Player D,BOS,5100000,22,0.2,1
+105,Player E,OKC,32000000,26,2.1,4
+106,Player F,OKC,9000000,21,0.6,2
+107,Player G,SAS,18000000,29,1.1,2
+108,Player H,SAS,2600000,20,-0.1,3
+109,Player I,NYK,38000000,31,1.9,2
+110,Player J,NYK,6000000,25,0.4,1

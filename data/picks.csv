@@ -1,0 +1,4 @@
+pick_id,team,year,slot_hint,value_units,protected
+p1,OKC,2027,own,3.0,false
+p2,SAS,2026,own,2.6,false
+p3,LAL,2029,own,3.2,true
