@@ -1,7 +1,7 @@
 from fastapi import FastAPI
-from .schemas import TradePayload, EvaluateResponse, TeamGrade
-from .cba.validator import validate_trade
-from .services.grading import score_team, letter_grade
+from app.schemas import TradePayload, EvaluateResponse, TeamGrade
+from app.cba.valid import validate_trade
+from app.services.grading import score_team, letter_grade
 
 app = FastAPI(title="NBA Trade Grader (MVP)")
 

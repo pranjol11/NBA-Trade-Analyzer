@@ -1,7 +1,7 @@
 from typing import List, Tuple
 from ..schemas import TradeSide, LegalityIssue, ValidateResponse
 from ..services import value as pv
-from ..utils.money import salary_band_max
+from ..util.money import salary_band_max
 
 ROSTER_MIN = 13
 ROSTER_MAX = 15
