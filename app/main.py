@@ -1,9 +1,14 @@
 from fastapi import FastAPI
+from fastapi.responses import RedirectResponse
 from app.schemas import TradePayload, EvaluateResponse, TeamGrade
 from app.cba.valid import validate_trade
 from app.services.grading import score_team, letter_grade
 
 app = FastAPI(title="NBA Trade Grader (MVP)")
+
+@app.get("/", include_in_schema=False)
+def root():
+    return RedirectResponse(url="/docs")
 
 @app.get("/health")
 def health():
