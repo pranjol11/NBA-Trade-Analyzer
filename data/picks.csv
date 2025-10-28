@@ -1,4 +1,167 @@
-pick_id,team,year,slot_hint,value_units,protected
-p1,OKC,2027,own,3.0,false
-p2,SAS,2026,own,2.6,false
-p3,LAL,2029,own,3.2,true
+pick_id,original_team,current_team,year,round,prot_type,prot_until,swap_with,value_units,notes
+atl_2029_1st,ATL,ATL,2029,1,none,,,3.2,ATL own 2029 1st
+atl_2030_1st,ATL,ATL,2030,1,none,,,3.2,ATL own 2030 1st
+atl_2031_1st,ATL,ATL,2031,1,none,,,3.2,ATL own 2031 1st
+atl_2032_1st,ATL,ATL,2032,1,none,,,3.2,ATL own 2032 1st
+bos_2026_1st,BOS,BOS,2026,1,none,,,3.2,BOS own 2026 1st
+bos_2027_1st,BOS,BOS,2027,1,none,,,3.2,BOS own 2027 1st
+bos_2028_1st,BOS,BOS,2028,1,none,,,3.2,BOS own 2028 1st (note: swap w/SAS possible per text)
+bos_2030_1st,BOS,BKN,2030,1,none,,,3.2,to BRK via HOU per text
+bos_2031_1st,BOS,BOS,2031,1,none,,,3.2,BOS own 2031 1st
+bos_2032_1st,BOS,BOS,2032,1,none,,,3.2,BOS frozen note; treat as BOS own for now
+brk_2026_1st,BRK,BRK,2026,1,none,,,3.2,BRK own (via HOU)
+brk_2027_1st,BRK,BRK,2027,1,none,,,3.2,BRK own or HOU swap—kept as BRK own placeholder
+brk_2028_1st,BRK,BRK,2028,1,none,,,3.2,Complex multi-swap; keep as BRK own for now
+brk_2029_1st,BRK,BRK,2029,1,none,,,3.2,BRK own 2029 1st
+brk_2030_1st,BRK,BRK,2030,1,none,,,3.2,BRK own 2030 1st
+brk_2031_1st,BRK,BRK,2031,1,none,,,3.2,BRK own 2031 1st
+brk_2032_1st,BRK,BRK,2032,1,none,,,3.2,BRK own 2032 1st
+cha_2026_1st,CHA,CHA,2026,1,none,,,3.2,CHA own 2026 1st
+cha_2027_1st,CHA,CHA,2027,1,none,,,3.2,CHA own 2027 1st
+cha_2028_1st,CHA,CHA,2028,1,none,,,3.2,CHA own 2028 1st
+cha_2029_1st,CHA,CHA,2029,1,none,,,3.2,CHA own 2029 1st
+cha_2030_1st,CHA,CHA,2030,1,none,,,3.2,CHA own 2030 1st
+cha_2031_1st,CHA,CHA,2031,1,none,,,3.2,CHA own 2031 1st
+cha_2032_1st,CHA,CHA,2032,1,none,,,3.2,CHA own 2032 1st
+chi_2026_1st,CHI,CHI,2026,1,none,,,3.2,CHI own 2026 1st
+chi_2027_1st,CHI,CHI,2027,1,none,,,3.2,CHI own 2027 1st
+chi_2028_1st,CHI,CHI,2028,1,none,,,3.2,CHI own 2028 1st
+chi_2029_1st,CHI,CHI,2029,1,none,,,3.2,CHI own 2029 1st
+chi_2030_1st,CHI,CHI,2030,1,none,,,3.2,CHI own 2030 1st
+chi_2031_1st,CHI,CHI,2031,1,none,,,3.2,CHI own 2031 1st
+chi_2032_1st,CHI,CHI,2032,1,none,,,3.2,CHI own 2032 1st
+cle_2026_1st,CLE,CLE,2026,1,none,,,3.2,Complex swaps in text; placeholder as CLE own
+cle_2028_1st,CLE,CLE,2028,1,none,,,3.2,CLE own 2028 1st (swaps possible)
+cle_2030_1st,CLE,CLE,2030,1,none,,,3.2,CLE own 2030 1st
+cle_2031_1st,CLE,CLE,2031,1,none,,,3.2,CLE own 2031 1st
+cle_2032_1st,CLE,CLE,2032,1,none,,,3.2,CLE own 2032 1st
+dal_2026_1st,DAL,DAL,2026,1,none,,,3.2,DAL own 2026 1st
+dal_2028_1st,DAL,DAL,2028,1,none,,,3.2,DAL own or OKC swap; keep DAL for now
+dal_2030_1st,DAL,DAL,2030,1,none,,,3.2,DAL own or SAS swap; keep DAL for now
+dal_2031_1st,DAL,DAL,2031,1,none,,,3.2,DAL own 2031 1st
+dal_2032_1st,DAL,DAL,2032,1,none,,,3.2,DAL own 2032 1st
+den_2026_1st,DEN,DEN,2026,1,none,,,3.2,DEN own 2026 1st
+den_2027_1st,DEN,DEN,2027,1,top5,5,,3.2,"1–5 own; 6–30 to OKC/LAC per text"
+den_2028_1st,DEN,DEN,2028,1,top5,5,,3.2,"1–5 own; 6–30 to OKC if not settled"
+den_2029_1st,DEN,DEN,2029,1,top5,5,,3.2,"1–5 own; 6–30 conditions with OKC"
+den_2030_1st,DEN,DEN,2030,1,top5,5,,3.2,"1–5 own; 6–30 to OKC if prior conveys"
+den_2031_1st,DEN,DEN,2031,1,none,,,3.2,DEN own 2031 1st
+det_2026_1st,DET,DET,2026,1,none,,,3.2,DET own 2026 1st
+det_2027_1st,DET,DET,2027,1,none,,,3.2,DET own 2027 1st
+det_2028_1st,DET,DET,2028,1,none,,,3.2,DET own 2028 1st
+det_2029_1st,DET,DET,2029,1,none,,,3.2,DET own 2029 1st
+det_2030_1st,DET,DET,2030,1,none,,,3.2,DET own 2030 1st
+det_2031_1st,DET,DET,2031,1,none,,,3.2,DET own 2031 1st
+det_2032_1st,DET,DET,2032,1,none,,,3.2,DET own 2032 1st
+gsw_2026_1st,GOS,GOS,2026,1,none,,,3.2,GOS own 2026 1st
+gsw_2027_1st,GOS,GOS,2027,1,none,,,3.2,GOS own 2027 1st
+gsw_2028_1st,GOS,GOS,2028,1,none,,,3.2,GOS own 2028 1st
+gsw_2029_1st,GOS,GOS,2029,1,none,,,3.2,GOS own 2029 1st
+gsw_2030_1st,GOS,GOS,2030,1,none,,,3.2,"1–20 own; 21–30 to WAS"
+gsw_2031_1st,GOS,GOS,2031,1,none,,,3.2,GOS own 2031 1st
+gsw_2032_1st,GOS,GOS,2032,1,none,,,3.2,GOS own 2032 1st
+hou_2028_1st,HOU,HOU,2028,1,none,,,3.2,HOU own 2028 1st
+hou_2029_1st,HOU,HOU,2029,1,none,,,3.2,HOU two-most/other mechanics—kept as own
+hou_2030_1st,HOU,HOU,2030,1,none,,,3.2,HOU own 2030 1st
+hou_2031_1st,HOU,HOU,2031,1,none,,,3.2,HOU own 2031 1st
+hou_2032_1st,HOU,HOU,2032,1,none,,,3.2,HOU own 2032 1st
+ind_2026_1st,IND,IND,2026,1,none,,,3.2,IND own 2026 1st
+ind_2027_1st,IND,IND,2027,1,none,,,3.2,IND own 2027 1st
+ind_2028_1st,IND,IND,2028,1,none,,,3.2,IND own 2028 1st
+ind_2029_1st,IND,IND,2029,1,none,,,3.2,IND own 2029 1st
+ind_2030_1st,IND,IND,2030,1,none,,,3.2,IND own 2030 1st
+ind_2031_1st,IND,IND,2031,1,none,,,3.2,IND own 2031 1st
+ind_2032_1st,IND,IND,2032,1,none,,,3.2,IND own 2032 1st
+lac_2029_1st,LAC,LAC,2029,1,none,,,3.2,"1–3 own; 4–30 swap with PHL – kept as own baseline"
+lac_2031_1st,LAC,LAC,2031,1,none,,,3.2,LAC own 2031 1st
+lac_2032_1st,LAC,LAC,2032,1,none,,,3.2,LAC own 2032 1st
+lal_2026_1st,LAL,LAL,2026,1,none,,,3.2,LAL own 2026 1st
+lal_2027_1st,LAL,UTH,2027,1,top4,4,,3.2,"1–4 stay LAL; 5–30 to UTH — encode as owed to UTH with top4 protection"
+lal_2028_1st,LAL,LAL,2028,1,none,,,3.2,LAL own 2028 1st
+lal_2030_1st,LAL,LAL,2030,1,none,,,3.2,LAL own 2030 1st
+lal_2031_1st,LAL,LAL,2031,1,none,,,3.2,LAL own 2031 1st
+lal_2032_1st,LAL,LAL,2032,1,none,,,3.2,LAL own 2032 1st
+mem_2027_1st,MEM,MEM,2027,1,none,,,3.2,MEM own 2027 1st
+mem_2028_1st,MEM,MEM,2028,1,none,,,3.2,MEM own 2028 1st
+mem_2029_1st,MEM,MEM,2029,1,none,,,3.2,MEM own or swap for ORL 3–30; kept as own
+mem_2031_1st,MEM,MEM,2031,1,none,,,3.2,MEM own 2031 1st
+mem_2032_1st,MEM,MEM,2032,1,none,,,3.2,MEM own 2032 1st
+mia_2026_1st,MIA,MIA,2026,1,none,,,3.2,MIA own 2026 1st
+mia_2027_1st,MIA,MIA,2027,1,top14,14,,3.2,"1–14 own; 15–30 to CHA"
+mia_2029_1st,MIA,MIA,2029,1,none,,,3.2,MIA own 2029 1st
+mia_2030_1st,MIA,MIA,2030,1,none,,,3.2,MIA own 2030 1st
+mia_2031_1st,MIA,MIA,2031,1,none,,,3.2,MIA own 2031 1st
+mia_2032_1st,MIA,MIA,2032,1,none,,,3.2,MIA own 2032 1st
+mil_2026_1st,MIL,MIL,2026,1,none,,,3.2,Less favorable with NOP → kept as MIL own baseline
+mil_2028_1st,MIL,MIL,2028,1,none,,,3.2,Complex swap matrix; baseline own
+mil_2030_1st,MIL,MIL,2030,1,none,,,3.2,Own or POR swap; baseline own
+mil_2031_1st,MIL,MIL,2031,1,none,,,3.2,MIL own 2031 1st
+mil_2032_1st,MIL,MIL,2032,1,none,,,3.2,MIL own 2032 1st
+min_2028_1st,MIN,MIN,2028,1,none,,,3.2,MIN own 2028 1st
+min_2029_1st,MIN,MIN,2029,1,top5,5,,3.2,"1–5 own; 6–30 into UTH tree"
+min_2030_1st,MIN,MIN,2030,1,none,,,3.2,Own w/ DAL/SAS swap tree—baseline own
+min_2032_1st,MIN,MIN,2032,1,none,,,3.2,Frozen note; baseline own
+nop_2028_1st,NOP,NOP,2028,1,none,,,3.2,NOP own 2028 1st
+nop_2029_1st,NOP,NOP,2029,1,none,,,3.2,NOP own 2029 1st
+nop_2030_1st,NOP,NOP,2030,1,none,,,3.2,NOP own or ORL swap; baseline own
+nop_2031_1st,NOP,NOP,2031,1,none,,,3.2,NOP own 2031 1st
+nop_2032_1st,NOP,NOP,2032,1,none,,,3.2,NOP own 2032 1st
+nyk_2026_1st,NYK,NYK,2026,1,none,,,3.2,NYK own 2026 1st
+nyk_2028_1st,NYK,NYK,2028,1,none,,,3.2,Complex BRK/PHX matrix; baseline own
+nyk_2030_1st,NYK,NYK,2030,1,none,,,3.2,NYK own 2030 1st
+nyk_2032_1st,NYK,NYK,2032,1,none,,,3.2,NYK own 2032 1st
+okc_2028_1st,OKC,OKC,2028,1,none,,,3.2,OKC own/swap DAL; baseline own
+okc_2029_1st,OKC,OKC,2029,1,none,,,3.2,OKC own 2029 1st
+okc_2030_1st,OKC,OKC,2030,1,none,,,3.2,OKC own 2030 1st
+okc_2031_1st,OKC,OKC,2031,1,none,,,3.2,OKC own 2031 1st
+okc_2032_1st,OKC,OKC,2032,1,none,,,3.2,OKC own 2032 1st
+orl_2027_1st,ORL,ORL,2027,1,none,,,3.2,ORL own 2027 1st
+orl_2029_1st,ORL,ORL,2029,1,top2,2,,3.2,"1–2 own; 3–30 swap for MEM – baseline own"
+orl_2031_1st,ORL,ORL,2031,1,none,,,3.2,ORL own 2031 1st
+orl_2032_1st,ORL,ORL,2032,1,none,,,3.2,ORL own 2032 1st
+phi_2026_1st,PHL,PHL,2026,1,top4,4,,3.2,"1–4 own; 5–30 to OKC"
+phi_2027_1st,PHL,PHL,2027,1,top4,4,,3.2,"1–4 own; 5–30 to OKC if not settled"
+phi_2028_1st,PHL,PHL,2028,1,top8,8,,3.2,"1–8 own; complex swap tree otherwise"
+phi_2029_1st,PHL,PHL,2029,1,none,,,3.2,Own or swap for LAC 4–30; baseline own
+phi_2030_1st,PHL,PHL,2030,1,none,,,3.2,PHL own 2030 1st
+phi_2031_1st,PHL,PHL,2031,1,none,,,3.2,PHL own 2031 1st
+phi_2032_1st,PHL,PHL,2032,1,none,,,3.2,PHL own 2032 1st
+phx_2029_1st,PHX,PHX,2029,1,none,,,3.2,Two-most to HOU; baseline keep as own
+phx_2031_1st,PHX,UTH,2031,1,none,,,3.2,PHX to UTH per text
+phx_2032_1st,PHX,PHX,2032,1,none,,,3.2,Frozen note; baseline own
+por_2026_1st,POR,POR,2026,1,top14,14,,3.2,"1–14 own; 15–30 to CHI"
+por_2027_1st,POR,POR,2027,1,top14,14,,3.2,"1–14 own; 15–30 to CHI if not settled"
+por_2028_1st,POR,POR,2028,1,top14,14,,3.2,"1–14 own or swap for MIL; else 15–30 to CHI if not settled"
+por_2029_1st,POR,POR,2029,1,none,,,3.2,Most/least to POR; baseline own
+por_2030_1st,POR,POR,2030,1,none,,,3.2,Own or swap for MIL; baseline own
+por_2031_1st,POR,POR,2031,1,none,,,3.2,POR own 2031 1st
+por_2032_1st,POR,POR,2032,1,none,,,3.2,POR own 2032 1st
+sac_2026_1st,SAC,SAC,2026,1,none,,,3.2,SAC own 2026 1st
+sac_2027_1st,SAC,SAC,2027,1,split,, ,3.2,"1st: own; SAN 1–16 separate first—kept SAC own"
+sac_2028_1st,SAC,SAC,2028,1,none,,,3.2,SAC own 2028 1st
+sac_2029_1st,SAC,SAC,2029,1,none,,,3.2,SAC own 2029 1st
+sac_2030_1st,SAC,SAC,2030,1,none,,,3.2,SAC own 2030 1st
+sac_2031_1st,SAC,SAC,2031,1,none,,,3.2,SAC own or SAN swap—baseline own
+sac_2032_1st,SAC,SAC,2032,1,none,,,3.2,SAC own 2032 1st
+sas_2026_1st,SAS,SAS,2026,1,none,,,3.2,SAS own or swap for ATL—baseline own
+sas_2028_1st,SAS,SAS,2028,1,none,,,3.2,Own or swap for BOS 2–30—baseline own
+sas_2029_1st,SAS,SAS,2029,1,none,,,3.2,SAS own 2029 1st
+sas_2030_1st,SAS,SAS,2030,1,none,,,3.2,Complex SAN/DAL/MIN swap tree—baseline own
+sas_2031_1st,SAS,SAS,2031,1,none,,,3.2,Own or swap for SAC—baseline own
+sas_2032_1st,SAS,SAS,2032,1,none,,,3.2,SAS own 2032 1st
+tor_2026_1st,TOR,TOR,2026,1,none,,,3.2,TOR own 2026 1st
+tor_2027_1st,TOR,TOR,2027,1,none,,,3.2,TOR own 2027 1st
+tor_2028_1st,TOR,TOR,2028,1,none,,,3.2,TOR own 2028 1st
+tor_2029_1st,TOR,TOR,2029,1,none,,,3.2,TOR own 2029 1st
+tor_2030_1st,TOR,TOR,2030,1,none,,,3.2,TOR own 2030 1st
+tor_2031_1st,TOR,TOR,2031,1,none,,,3.2,TOR own 2031 1st
+tor_2032_1st,TOR,TOR,2032,1,none,,,3.2,TOR own 2032 1st
+uth_2028_1st,UTH,UTH,2028,1,none,,,3.2,Own or swap for CLE; baseline own
+uth_2029_1st,UTH,UTH,2029,1,none,,,3.2,Most/two-most tree; baseline own
+uth_2030_1st,UTH,UTH,2030,1,none,,,3.2,UTH own 2030 1st
+uth_2031_1st,UTH,UTH,2031,1,none,,,3.2,UTH own 2031 1st
+uth_2032_1st,UTH,UTH,2032,1,none,,,3.2,UTH own 2032 1st
+was_2029_1st,WAS,WAS,2029,1,none,,,3.2,WAS own 2029 1st
+was_2030_1st,WAS,WAS,2030,1,none,,,3.2,WAS own 2030 1st
+was_2031_1st,WAS,WAS,2031,1,none,,,3.2,WAS own 2031 1st
+was_2032_1st,WAS,WAS,2032,1,none,,,3.2,WAS own 2032 1st
