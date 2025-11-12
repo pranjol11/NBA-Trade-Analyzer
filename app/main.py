@@ -16,7 +16,6 @@ def health():
 
 @app.get("/ui", include_in_schema=False)
 def ui_page():
-    # Serve a plain static HTML file (no Jinja, no static mount required)
     return FileResponse("static/index.html")
 
 @app.post("/trade/validate")
