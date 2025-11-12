@@ -1,5 +1,5 @@
 from fastapi import FastAPI
-from fastapi.responses import RedirectResponse
+from fastapi.responses import RedirectResponse, FileResponse
 from app.schemas import TradePayload, EvaluateResponse, TeamGrade
 from app.cba.valid import validate_trade
 from app.services.grading import score_team, letter_grade
@@ -13,6 +13,11 @@ def root():
 @app.get("/health")
 def health():
     return {"ok": True}
+
+@app.get("/ui", include_in_schema=False)
+def ui_page():
+    # Serve a plain static HTML file (no Jinja, no static mount required)
+    return FileResponse("static/index.html")
 
 @app.post("/trade/validate")
 def trade_validate(payload: TradePayload):
