@@ -7,7 +7,7 @@ from app.util.resolve import normalize_payload
 from app.services import value as pv
 from fastapi.middleware.cors import CORSMiddleware
 
-app = FastAPI()
+app = FastAPI(title="NBA Trade Grader (MVP)")
 
 origins = [
     "https://nba-trade-analyzer-1.onrender.com",  # your frontend
@@ -22,7 +22,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-app = FastAPI(title="NBA Trade Grader (MVP)")
 
 @app.get("/", include_in_schema=False)
 def root():
