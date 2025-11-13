@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import List, Dict, Optional
+from typing import List, Dict, Optional, Union
 
 class TradeSide(BaseModel):
     team: str
@@ -10,6 +10,17 @@ class TradeSide(BaseModel):
 
 class TradePayload(BaseModel):
     sides: List[TradeSide]
+
+# Flexible input schema: allow player references by id or name; picks as free-form strings
+class TradeSideInput(BaseModel):
+    team: str
+    players_out: List[Union[int, str]] = Field(default_factory=list)
+    players_in: List[Union[int, str]] = Field(default_factory=list)
+    picks_out: List[str] = Field(default_factory=list)
+    picks_in: List[str] = Field(default_factory=list)
+
+class TradePayloadInput(BaseModel):
+    sides: List[TradeSideInput]
 
 class LegalityIssue(BaseModel):
     code: str

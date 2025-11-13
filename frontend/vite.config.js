@@ -15,6 +15,10 @@ export default defineConfig({
       '/trade': {
         target: 'http://localhost:8000',
         changeOrigin: true,
+      },
+      '/players': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
       }
     }
   }
