@@ -34,6 +34,7 @@ const Card = ({ title, actions, children, className = '' }) => (
 )
 
 export default function App() {
+  const API_BASE = (import.meta?.env?.VITE_API_BASE) ? (import.meta.env.VITE_API_BASE || '') : ''
   const initial = presets['LeBron ↔ Curry swap']
   const [activeTab, setActiveTab] = useState('builder') // 'builder' | 'json'
   const [builder, setBuilder] = useState(() => JSON.parse(JSON.stringify(initial)))
@@ -57,7 +58,8 @@ export default function App() {
   const postJSON = async (url, body, m) => {
     setBusy(true); setMode(m); setError(''); setResult(null)
     try {
-      const res = await fetch(url, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
+      const target = url.startsWith('http') ? url : `${API_BASE}${url}`
+      const res = await fetch(target, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body) })
       const text = await res.text()
       try { setResult(JSON.parse(text)) } catch { setResult(text) }
     } catch (e) {
@@ -100,7 +102,7 @@ export default function App() {
   const fetchPlayers = async (q, idx, which) => {
     if (!q || q.length < 2) { setSuggestions({ idx: -1, which: '', items: [] }); return }
     try {
-      const res = await fetch(`/players/search?q=${encodeURIComponent(q)}&limit=8`)
+      const res = await fetch(`${API_BASE}/players/search?q=${encodeURIComponent(q)}&limit=8`)
       const items = await res.json()
       setSuggestions({ idx, which, items })
     } catch {
@@ -298,7 +300,7 @@ export default function App() {
                           onSuggest={async (q) => {
                             if (!q || q.length < 2) return [];
                             try {
-                              const res = await fetch(`/players/search?q=${encodeURIComponent(q)}&limit=8`)
+                              const res = await fetch(`${API_BASE}/players/search?q=${encodeURIComponent(q)}&limit=8`)
                               return await res.json()
                             } catch {
                               return []
@@ -317,7 +319,7 @@ export default function App() {
                           onSuggest={async (q) => {
                             if (!q || q.length < 2) return [];
                             try {
-                              const res = await fetch(`/players/search?q=${encodeURIComponent(q)}&limit=8`)
+                              const res = await fetch(`${API_BASE}/players/search?q=${encodeURIComponent(q)}&limit=8`)
                               return await res.json()
                             } catch {
                               return []
