@@ -5,6 +5,22 @@ from app.cba.valid import validate_trade
 from app.services.grading import score_team, letter_grade
 from app.util.resolve import normalize_payload
 from app.services import value as pv
+from fastapi.middleware.cors import CORSMiddleware
+
+app = FastAPI()
+
+origins = [
+    "https://nba-trade-analyzer-1.onrender.com",  # your frontend
+    "http://localhost:5173",                      # for local Vite dev, optional
+]
+
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=origins,
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
 app = FastAPI(title="NBA Trade Grader (MVP)")
 
