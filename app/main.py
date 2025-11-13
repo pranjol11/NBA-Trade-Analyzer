@@ -1,5 +1,5 @@
 from fastapi import FastAPI, HTTPException, Query
-from fastapi.responses import RedirectResponse, FileResponse
+from fastapi.responses import RedirectResponse
 from app.schemas import TradePayload, EvaluateResponse, TeamGrade, TradePayloadInput
 from app.cba.valid import validate_trade
 from app.services.grading import score_team, letter_grade
@@ -15,10 +15,6 @@ def root():
 @app.get("/health")
 def health():
     return {"ok": True}
-
-@app.get("/ui", include_in_schema=False)
-def ui_page():
-    return FileResponse("static/index.html")
 
 @app.get("/players/search")
 def players_search(q: str = Query("", min_length=1), limit: int = 10):

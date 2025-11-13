@@ -13,6 +13,9 @@ const presets = {
       { team: 'BOS', players_out: [], players_in: [], picks_out: ['bos_2027_1st'], picks_in: ['brk_2027_1st'] },
       { team: 'BKN', players_out: [], players_in: [], picks_out: ['brk_2027_1st'], picks_in: ['bos_2027_1st'] }
     ]
+  },
+  'Custom': {
+    sides: []
   }
 }
 
@@ -254,7 +257,6 @@ export default function App() {
               <h1 className="text-2xl font-semibold">NBA Trade Analyzer</h1>
               <p className="text-sm text-indigo-100">Build trades, validate CBA constraints, and get team grades.</p>
             </div>
-            <a className="text-sm bg-white/10 hover:bg-white/20 transition-colors px-3 py-1.5 rounded" href="/docs" target="_blank" rel="noreferrer">API Docs</a>
           </div>
         </header>
 
