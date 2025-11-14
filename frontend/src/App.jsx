@@ -51,7 +51,7 @@ export default function App() {
     setActivePreset(name)
   }
   const [activePreset, setActivePreset] = useState('LeBron ↔ Curry swap')
-  const isLocked = activePreset !== 'Custom (empty)'
+  const isLocked = activePreset !== 'Custom'
   
 
   const parsePayload = () => {
