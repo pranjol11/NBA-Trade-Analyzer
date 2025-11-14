@@ -48,7 +48,10 @@ export default function App() {
     const p = presets[name]
     setBuilder(JSON.parse(JSON.stringify(p)))
     setJsonText(JSON.stringify(p, null, 2))
+    setActivePreset(name)
   }
+  const [activePreset, setActivePreset] = useState('LeBron ↔ Curry swap')
+  const isLocked = activePreset !== 'Custom (empty)'
   
 
   const parsePayload = () => {
@@ -205,7 +208,7 @@ export default function App() {
   }
 
   // TokenEditor: small reusable input with chips and optional suggestions
-  function TokenEditor({ tokens, onRemove, onAdd, placeholder, onSuggest, suggestions = [], onPickSuggest }) {
+  function TokenEditor({ tokens, onRemove, onAdd, placeholder, onSuggest, suggestions = [], onPickSuggest, locked=false }) {
     const [value, setValue] = useState('')
     const [localSuggestions, setLocalSuggestions] = useState([])
     useEffect(() => {
@@ -227,16 +230,20 @@ export default function App() {
           {tokens.map((t, i) => (
             <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-gray-100 border">
               <span>{t}</span>
-              <button type="button" onClick={()=>onRemove(i)} className="text-gray-500 hover:text-red-600">×</button>
+              {!locked && (
+                <button type="button" onClick={()=>onRemove(i)} className="text-gray-500 hover:text-red-600">×</button>
+              )}
             </span>
           ))}
         </div>
         <div className="relative">
-          <div className="flex gap-2">
-            <input value={value} onChange={(e)=>setValue(e.target.value)} placeholder={placeholder} className="flex-1 text-sm border rounded px-2 py-1"/>
-            <button type="button" onClick={()=>{onAdd(value); setValue('')}} className="px-2 py-1 text-sm rounded border bg-white hover:bg-gray-50">Add</button>
-          </div>
-          {localSuggestions.length > 0 && (
+          {!locked && (
+            <div className="flex gap-2">
+              <input value={value} onChange={(e)=>setValue(e.target.value)} placeholder={placeholder} className="flex-1 text-sm border rounded px-2 py-1"/>
+              <button type="button" onClick={()=>{onAdd(value); setValue('')}} className="px-2 py-1 text-sm rounded border bg-white hover:bg-gray-50">Add</button>
+            </div>
+          )}
+          {!locked && localSuggestions.length > 0 && (
             <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow" onMouseDown={(e)=> e.preventDefault()}>
               {localSuggestions.map((s, i) => (
                 <button type="button" key={i} onClick={()=>handlePickSuggest(s)} className="w-full text-left px-2 py-1 text-sm hover:bg-indigo-50">
@@ -267,7 +274,7 @@ export default function App() {
             title="Trade Builder"
             actions={(
               <div className="flex items-center gap-2">
-                <select className="text-sm border rounded px-2 py-1 bg-white" onChange={(e) => setPreset(e.target.value)} defaultValue="LeBron ↔ Curry swap">
+                <select className="text-sm border rounded px-2 py-1 bg-white" onChange={(e) => setPreset(e.target.value)} value={activePreset}>
                   {Object.keys(presets).map((k) => <option key={k} value={k}>{k}</option>)}
                 </select>
                 <div className="text-xs bg-gray-100 rounded border px-1.5 py-0.5">Mode:</div>
@@ -307,6 +314,7 @@ export default function App() {
                             }
                           }}
                           onPickSuggest={(name)=>addToken(idx,'players_out',name)}
+                          locked={isLocked}
                         />
                       </div>
                       <div>
@@ -326,6 +334,7 @@ export default function App() {
                             }
                           }}
                           onPickSuggest={(name)=>addToken(idx,'players_in',name)}
+                          locked={isLocked}
                         />
                       </div>
                       <div>
@@ -335,6 +344,7 @@ export default function App() {
                           onRemove={(i)=>removeToken(idx,'picks_out',i)}
                           placeholder="e.g., BOS 2027 1st or BOS27"
                           onAdd={(val)=>addToken(idx,'picks_out',val)}
+                          locked={isLocked}
                         />
                       </div>
                       <div>
@@ -344,14 +354,18 @@ export default function App() {
                           onRemove={(i)=>removeToken(idx,'picks_in',i)}
                           placeholder="e.g., BRK 2030 1st or BRK30"
                           onAdd={(val)=>addToken(idx,'picks_in',val)}
+                          locked={isLocked}
                         />
                       </div>
                     </div>
                   </div>
                 ))}
-                <div>
-                  <button type="button" onClick={addSide} className="px-2 py-1 text-sm rounded border bg-white hover:bg-gray-50">+ Add Team Side</button>
-                </div>
+                {!isLocked && (
+                  <div>
+                    <button type="button" onClick={addSide} className="px-2 py-1 text-sm rounded border bg-white hover:bg-gray-50">+ Add Team Side</button>
+                  </div>
+                )}
+                {isLocked && <p className="text-xs text-gray-500">Preset trade locked. Choose "Custom (empty)" to build your own.</p>}
                 <p className="text-xs text-gray-500">Tip: Player names resolve automatically. Picks accept exact IDs or simple forms like "BOS 2027 1st" / "BOS27".</p>
               </div>
             ) : (
