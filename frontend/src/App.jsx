@@ -1,6 +1,17 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 
+// NBA Team abbreviations used for team input suggestions
+const TEAM_CODES = [
+  'ATL','BOS','BKN','CHA','CHI','CLE','DAL','DEN','DET','GSW','HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK','OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS'
+]
+
 const presets = {
+  'Custom': {
+    sides: [
+      { team: '', players_out: [], players_in: [], picks_out: [], picks_in: [] },
+      { team: '', players_out: [], players_in: [], picks_out: [], picks_in: [] }
+    ]
+  },
   'LeBron ↔ Curry swap': {
     sides: [
       { team: 'LAL', players_out: ['LeBron James'], players_in: ['Stephen Curry'], picks_out: [], picks_in: [] },
@@ -9,13 +20,9 @@ const presets = {
   },
   'BOS ↔ BKN pick swap': {
     sides: [
-      // Use real pick_id values from data/picks.csv
       { team: 'BOS', players_out: [], players_in: [], picks_out: ['bos_2027_1st'], picks_in: ['brk_2027_1st'] },
       { team: 'BKN', players_out: [], players_in: [], picks_out: ['brk_2027_1st'], picks_in: ['bos_2027_1st'] }
     ]
-  },
-  'Custom': {
-    sides: []
   }
 }
 
@@ -35,7 +42,7 @@ const Card = ({ title, actions, children, className = '' }) => (
 
 export default function App() {
   const API_BASE = (import.meta?.env?.VITE_API_BASE) ? (import.meta.env.VITE_API_BASE || '') : ''
-  const initial = presets['LeBron ↔ Curry swap']
+  const initial = presets['Custom']
   const [activeTab, setActiveTab] = useState('builder') // 'builder' | 'json'
   const [builder, setBuilder] = useState(() => JSON.parse(JSON.stringify(initial)))
   const [jsonText, setJsonText] = useState(JSON.stringify(initial, null, 2))
@@ -50,7 +57,7 @@ export default function App() {
     setJsonText(JSON.stringify(p, null, 2))
     setActivePreset(name)
   }
-  const [activePreset, setActivePreset] = useState('LeBron ↔ Curry swap')
+  const [activePreset, setActivePreset] = useState('Custom')
   const isLocked = activePreset !== 'Custom'
   
 
@@ -85,36 +92,52 @@ export default function App() {
       return next
     })
   }
-  const addSide = () => setBuilder(prev => ({ ...prev, sides: [...prev.sides, { team: '', players_out: [], players_in: [], picks_out: [], picks_in: [] }] }))
-  const removeSide = (idx) => setBuilder(prev => ({ ...prev, sides: prev.sides.filter((_, i) => i !== idx) }))
 
   const addToken = (idx, key, value) => {
     if (!value) return
-    updateSide(idx, { [key]: [...builder.sides[idx][key], value] })
-  }
-  const removeToken = (idx, key, i) => {
     setBuilder(prev => {
       const next = JSON.parse(JSON.stringify(prev))
-      next.sides[idx][key].splice(i, 1)
+      // Add to the specified side
+      next.sides[idx][key].push(value)
+      
+      // Auto-mirror: what one team gives up, the other receives
+      const otherIdx = idx === 0 ? 1 : 0
+      if (key === 'players_out' && next.sides[otherIdx]) {
+        if (!next.sides[otherIdx].players_in.includes(value)) {
+          next.sides[otherIdx].players_in.push(value)
+        }
+      } else if (key === 'picks_out' && next.sides[otherIdx]) {
+        if (!next.sides[otherIdx].picks_in.includes(value)) {
+          next.sides[otherIdx].picks_in.push(value)
+        }
+      }
+      
       return next
     })
   }
-
-  // Player search suggestions
-  const [suggestions, setSuggestions] = useState({ idx: -1, which: '', items: [] })
-  const fetchPlayers = async (q, idx, which) => {
-    if (!q || q.length < 2) { setSuggestions({ idx: -1, which: '', items: [] }); return }
-    try {
-      const res = await fetch(`${API_BASE}/players/search?q=${encodeURIComponent(q)}&limit=8`)
-      const items = await res.json()
-      setSuggestions({ idx, which, items })
-    } catch {
-      setSuggestions({ idx: -1, which: '', items: [] })
-    }
-  }
-  const applySuggestion = (idx, which, name) => {
-    addToken(idx, which, name)
-    setSuggestions({ idx: -1, which: '', items: [] })
+  
+  const removeToken = (idx, key, i) => {
+    setBuilder(prev => {
+      const next = JSON.parse(JSON.stringify(prev))
+      const removedValue = next.sides[idx][key][i]
+      next.sides[idx][key].splice(i, 1)
+      
+      // Auto-mirror removal: remove from other team's receives
+      const otherIdx = idx === 0 ? 1 : 0
+      if (key === 'players_out' && next.sides[otherIdx]) {
+        const inIdx = next.sides[otherIdx].players_in.indexOf(removedValue)
+        if (inIdx !== -1) {
+          next.sides[otherIdx].players_in.splice(inIdx, 1)
+        }
+      } else if (key === 'picks_out' && next.sides[otherIdx]) {
+        const inIdx = next.sides[otherIdx].picks_in.indexOf(removedValue)
+        if (inIdx !== -1) {
+          next.sides[otherIdx].picks_in.splice(inIdx, 1)
+        }
+      }
+      
+      return next
+    })
   }
 
   const Legality = ({ data }) => {
@@ -179,7 +202,7 @@ export default function App() {
       <div className="p-3 rounded border bg-red-50 border-red-200 text-sm text-red-800">{error}</div>
     )
     if (result == null) return (
-      <div className="p-3 rounded border bg-gray-50 border-gray-200 text-sm text-gray-600">Results will appear here…</div>
+      <div className="p-3 rounded border bg-gray-50 border-gray-200 text-sm text-gray-600">Grades will appear here…</div>
     )
     if (typeof result === 'string') {
       return <pre className="bg-gray-50 border rounded p-3 text-xs overflow-auto h-72 whitespace-pre">{result}</pre>
@@ -208,7 +231,7 @@ export default function App() {
   }
 
   // TokenEditor: small reusable input with chips and optional suggestions
-  function TokenEditor({ tokens, onRemove, onAdd, placeholder, onSuggest, suggestions = [], onPickSuggest, locked=false }) {
+  function TokenEditor({ tokens, onRemove, onAdd, onSuggest, suggestions = [], onPickSuggest, locked=false }) {
     const [value, setValue] = useState('')
     const [localSuggestions, setLocalSuggestions] = useState([])
     useEffect(() => {
@@ -228,10 +251,10 @@ export default function App() {
       <div>
         <div className="flex flex-wrap gap-2 mb-2">
           {tokens.map((t, i) => (
-            <span key={i} className="inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs bg-gray-100 border">
+            <span key={i} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm bg-gray-100 border font-medium">
               <span>{t}</span>
               {!locked && (
-                <button type="button" onClick={()=>onRemove(i)} className="text-gray-500 hover:text-red-600">×</button>
+                <button type="button" onClick={()=>onRemove(i)} className="text-gray-500 hover:text-red-600 text-base leading-none">×</button>
               )}
             </span>
           ))}
@@ -239,7 +262,7 @@ export default function App() {
         <div className="relative">
           {!locked && (
             <div className="flex gap-2">
-              <input value={value} onChange={(e)=>setValue(e.target.value)} placeholder={placeholder} className="flex-1 text-sm border rounded px-2 py-1"/>
+              <input value={value} onChange={(e)=>setValue(e.target.value)} className="flex-1 text-sm border rounded px-2 py-1"/>
               <button type="button" onClick={()=>{onAdd(value); setValue('')}} className="px-2 py-1 text-sm rounded border bg-white hover:bg-gray-50">Add</button>
             </div>
           )}
@@ -264,12 +287,12 @@ export default function App() {
           <div className="flex items-center justify-between">
             <div>
               <h1 className="text-2xl font-semibold">NBA Trade Analyzer</h1>
-              <p className="text-sm text-indigo-100">Build trades, validate CBA constraints, and get team grades.</p>
+              <p className="text-sm text-indigo-100">Create trades and evaluate them</p>
             </div>
           </div>
         </header>
 
-        <div className="grid gap-6 lg:grid-cols-2">
+        <div className="space-y-6">
           <Card
             title="Trade Builder"
             actions={(
@@ -286,87 +309,131 @@ export default function App() {
             )}
           >
             {activeTab === 'builder' ? (
-              <div className="space-y-6">
-                {builder.sides.map((side, idx) => (
-                  <div key={idx} className="rounded-lg border p-4">
-                    <div className="flex items-center justify-between mb-3">
-                      <div className="flex items-center gap-2">
-                        <label className="text-sm text-gray-600">Team</label>
-                        <input value={side.team} onChange={(e)=>updateSide(idx,{team:e.target.value.toUpperCase()})} placeholder="LAL" className="text-sm border rounded px-2 py-1 w-24"/>
+              <div className="space-y-4">
+                <div className="rounded-lg border p-4">
+                  <div className="grid grid-cols-2 gap-6">
+                    {/* Team 1 */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <label className="text-sm font-semibold text-gray-700">Team 1</label>
+                        <div className="relative">
+                          <input 
+                            value={builder.sides[0]?.team || ''} 
+                            onChange={(e)=>updateSide(0,{team:e.target.value.toUpperCase()})} 
+                            className="text-sm border rounded px-2 py-1 w-24"
+                            disabled={isLocked}
+                          />
+                          {!isLocked && builder.sides[0]?.team && builder.sides[0].team.length > 0 && (
+                            (()=>{
+                              const q = builder.sides[0].team.toUpperCase();
+                              const matches = TEAM_CODES.filter(t=>t.startsWith(q) && t!==q).slice(0,5);
+                              return matches.length ? (
+                                <div className="absolute z-10 mt-1 w-24 bg-white border rounded shadow text-xs">
+                                  {matches.map(m => (
+                                    <button type="button" key={m} onClick={()=>updateSide(0,{team:m})} className="block w-full text-left px-2 py-1 hover:bg-indigo-50">
+                                      {m}
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : null
+                            })()
+                          )}
+                        </div>
                       </div>
-                      <button type="button" onClick={()=>removeSide(idx)} className="text-sm text-red-600 hover:underline">Remove</button>
+                      <div className="space-y-3">
+                        <div>
+                          <div className="text-sm font-medium text-gray-600 mb-1">Gives Up Players</div>
+                          <TokenEditor
+                            tokens={builder.sides[0]?.players_out || []}
+                            onRemove={(i)=>removeToken(0,'players_out',i)}
+                            onAdd={(val)=>addToken(0,'players_out',val)}
+                            onSuggest={async (q) => {
+                              if (!q || q.length < 2) return [];
+                              try {
+                                const res = await fetch(`${API_BASE}/players/search?q=${encodeURIComponent(q)}&limit=8`)
+                                return await res.json()
+                              } catch {
+                                return []
+                              }
+                            }}
+                            onPickSuggest={(name)=>addToken(0,'players_out',name)}
+                            locked={isLocked}
+                          />
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-600 mb-1">Gives Up Picks</div>
+                          <TokenEditor
+                            tokens={builder.sides[0]?.picks_out || []}
+                            onRemove={(i)=>removeToken(0,'picks_out',i)}
+                            onAdd={(val)=>addToken(0,'picks_out',val)}
+                            locked={isLocked}
+                          />
+                        </div>
+                      </div>
                     </div>
-                    <div className="grid md:grid-cols-2 gap-4">
-                      <div>
-                        <div className="text-sm font-medium mb-1">Players Out</div>
-                        <TokenEditor
-                          tokens={side.players_out}
-                          onRemove={(i)=>removeToken(idx,'players_out',i)}
-                          placeholder="Type player name..."
-                          onAdd={(val)=>addToken(idx,'players_out',val)}
-                          onSuggest={async (q) => {
-                            if (!q || q.length < 2) return [];
-                            try {
-                              const res = await fetch(`${API_BASE}/players/search?q=${encodeURIComponent(q)}&limit=8`)
-                              return await res.json()
-                            } catch {
-                              return []
-                            }
-                          }}
-                          onPickSuggest={(name)=>addToken(idx,'players_out',name)}
-                          locked={isLocked}
-                        />
+
+                    {/* Team 2 */}
+                    <div>
+                      <div className="flex items-center gap-2 mb-3">
+                        <label className="text-sm font-semibold text-gray-700">Team 2</label>
+                        <div className="relative">
+                          <input 
+                            value={builder.sides[1]?.team || ''} 
+                            onChange={(e)=>updateSide(1,{team:e.target.value.toUpperCase()})} 
+                            className="text-sm border rounded px-2 py-1 w-24"
+                            disabled={isLocked}
+                          />
+                          {!isLocked && builder.sides[1]?.team && builder.sides[1].team.length > 0 && (
+                            (()=>{
+                              const q = builder.sides[1].team.toUpperCase();
+                              const matches = TEAM_CODES.filter(t=>t.startsWith(q) && t!==q).slice(0,5);
+                              return matches.length ? (
+                                <div className="absolute z-10 mt-1 w-24 bg-white border rounded shadow text-xs">
+                                  {matches.map(m => (
+                                    <button type="button" key={m} onClick={()=>updateSide(1,{team:m})} className="block w-full text-left px-2 py-1 hover:bg-indigo-50">
+                                      {m}
+                                    </button>
+                                  ))}
+                                </div>
+                              ) : null
+                            })()
+                          )}
+                        </div>
                       </div>
-                      <div>
-                        <div className="text-sm font-medium mb-1">Players In</div>
-                        <TokenEditor
-                          tokens={side.players_in}
-                          onRemove={(i)=>removeToken(idx,'players_in',i)}
-                          placeholder="Type player name..."
-                          onAdd={(val)=>addToken(idx,'players_in',val)}
-                          onSuggest={async (q) => {
-                            if (!q || q.length < 2) return [];
-                            try {
-                              const res = await fetch(`${API_BASE}/players/search?q=${encodeURIComponent(q)}&limit=8`)
-                              return await res.json()
-                            } catch {
-                              return []
-                            }
-                          }}
-                          onPickSuggest={(name)=>addToken(idx,'players_in',name)}
-                          locked={isLocked}
-                        />
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium mb-1">Picks Out</div>
-                        <TokenEditor
-                          tokens={side.picks_out}
-                          onRemove={(i)=>removeToken(idx,'picks_out',i)}
-                          placeholder="e.g., BOS 2027 1st or BOS27"
-                          onAdd={(val)=>addToken(idx,'picks_out',val)}
-                          locked={isLocked}
-                        />
-                      </div>
-                      <div>
-                        <div className="text-sm font-medium mb-1">Picks In</div>
-                        <TokenEditor
-                          tokens={side.picks_in}
-                          onRemove={(i)=>removeToken(idx,'picks_in',i)}
-                          placeholder="e.g., BRK 2030 1st or BRK30"
-                          onAdd={(val)=>addToken(idx,'picks_in',val)}
-                          locked={isLocked}
-                        />
+                      <div className="space-y-3">
+                        <div>
+                          <div className="text-sm font-medium text-gray-600 mb-1">Gives Up Players</div>
+                          <TokenEditor
+                            tokens={builder.sides[1]?.players_out || []}
+                            onRemove={(i)=>removeToken(1,'players_out',i)}
+                            onAdd={(val)=>addToken(1,'players_out',val)}
+                            onSuggest={async (q) => {
+                              if (!q || q.length < 2) return [];
+                              try {
+                                const res = await fetch(`${API_BASE}/players/search?q=${encodeURIComponent(q)}&limit=8`)
+                                return await res.json()
+                              } catch {
+                                return []
+                              }
+                            }}
+                            onPickSuggest={(name)=>addToken(1,'players_out',name)}
+                            locked={isLocked}
+                          />
+                        </div>
+                        <div>
+                          <div className="text-sm font-medium text-gray-600 mb-1">Gives Up Picks</div>
+                          <TokenEditor
+                            tokens={builder.sides[1]?.picks_out || []}
+                            onRemove={(i)=>removeToken(1,'picks_out',i)}
+                            onAdd={(val)=>addToken(1,'picks_out',val)}
+                            locked={isLocked}
+                          />
+                        </div>
                       </div>
                     </div>
                   </div>
-                ))}
-                {!isLocked && (
-                  <div>
-                    <button type="button" onClick={addSide} className="px-2 py-1 text-sm rounded border bg-white hover:bg-gray-50">+ Add Team Side</button>
-                  </div>
-                )}
-                {isLocked && <p className="text-xs text-gray-500">Preset trade locked. Choose "Custom (empty)" to build your own.</p>}
-                <p className="text-xs text-gray-500">Tip: Player names resolve automatically. Picks accept exact IDs or simple forms like "BOS 2027 1st" / "BOS27".</p>
+                </div>
+                {isLocked && <p className="text-xs text-gray-500">Preset trade locked. Choose "Custom" to build your own.</p>}
               </div>
             ) : (
               <div>
@@ -389,7 +456,7 @@ export default function App() {
             </div>
           </Card>
 
-          <Card title="Results">
+          <Card title="Grades">
             <ResultPanel />
           </Card>
         </div>

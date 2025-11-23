@@ -33,18 +33,20 @@ def health():
 
 @app.get("/players/search")
 def players_search(q: str = Query("", min_length=1), limit: int = 10):
-    """Search players by name (case-insensitive). Returns id, name, team."""
+    """Search players by name (case-insensitive). Returns name, team only."""
     try:
         df = pv._load_players()
         subset = df[df['name'].str.contains(q, case=False, na=False)].head(limit)
-        return [
-            {
-                "player_id": int(row.player_id),
-                "name": str(row.name),
-                "team": str(row.team),
-            }
-            for _, row in subset.iterrows()
-        ]
+        results = []
+        for _, row in subset.iterrows():
+            # Explicitly access name column and ensure it's a string
+            player_name = str(row['name']) if 'name' in row else str(row.get('name', ''))
+            player_team = str(row['team']) if 'team' in row else str(row.get('team', ''))
+            results.append({
+                "name": player_name,
+                "team": player_team
+            })
+        return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
 
