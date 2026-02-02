@@ -461,6 +461,10 @@ export default function App() {
           </Card>
         </div>
 
+        <div className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mt-6 mb-4 text-center">
+          ⏳ <strong>Note:</strong> Initial data loading and trade processing may take 50+ seconds due to free tier hosting on Render.
+        </div>
+
         <footer className="text-xs text-gray-500 mt-8 mb-6 text-center">Vite + React • Calling FastAPI at http://localhost:8000 via proxy</footer>
       </div>
     </div>
