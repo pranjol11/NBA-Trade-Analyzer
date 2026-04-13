@@ -29,7 +29,7 @@ class LegalityIssue(BaseModel):
 
 class ValidateResponse(BaseModel):
     legal: bool
-    issues: List[LegalityIssue] = []
+    issues: List[LegalityIssue] = Field(default_factory=list)
 
 class TeamGrade(BaseModel):
     team: str

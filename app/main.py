@@ -6,12 +6,15 @@ from app.services.grading import score_team, letter_grade
 from app.util.resolve import normalize_payload
 from app.services import value as pv
 from fastapi.middleware.cors import CORSMiddleware
+import os
 
 app = FastAPI(title="NBA Trade Grader (MVP)")
 
 origins = [
-    "https://nba-trade-analyzer-1.onrender.com",  # your frontend
-    "http://localhost:5173",                      # for local Vite dev, optional
+    o.strip() for o in os.getenv(
+        "CORS_ALLOW_ORIGINS",
+        "https://nba-trade-analyzer-1.onrender.com,http://localhost:5173"
+    ).split(",") if o.strip()
 ]
 
 app.add_middleware(
@@ -54,7 +57,7 @@ def players_search(q: str = Query("", min_length=1), limit: int = 10):
 def trade_validate(payload: TradePayloadInput):
     """Accepts player ids or names, and flexible pick strings; resolves to canonical ids."""
     try:
-        norm = normalize_payload(payload.dict())
+        norm = normalize_payload(payload.model_dump())
         canonical = TradePayload(**norm)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))
@@ -63,7 +66,7 @@ def trade_validate(payload: TradePayloadInput):
 @app.post("/trade/evaluate", response_model=EvaluateResponse)
 def trade_evaluate(payload: TradePayloadInput):
     try:
-        norm = normalize_payload(payload.dict())
+        norm = normalize_payload(payload.model_dump())
         canonical = TradePayload(**norm)
     except Exception as e:
         raise HTTPException(status_code=400, detail=str(e))

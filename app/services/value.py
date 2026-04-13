@@ -8,6 +8,21 @@ def _load_players():
     global PLAYERS
     if PLAYERS is None:
         df = pd.read_csv(Path("data/players.csv"))
+
+        # Defensive cleanup: keep one row per player_id so duplicate snapshot rows
+        # do not overcount salary/impact/value in trade calculations.
+        if "player_id" in df.columns:
+            df = df.drop_duplicates(subset=["player_id"], keep="first")
+
+        # Normalize numeric fields used by downstream math.
+        for col in ["salary", "impact_now", "age"]:
+            if col in df.columns:
+                df[col] = pd.to_numeric(df[col], errors="coerce")
+
+        df["salary"] = df["salary"].fillna(0.0)
+        df["impact_now"] = df["impact_now"].fillna(0.0)
+        df["age"] = df["age"].fillna(26.0)
+
         df["value_future_3y"] = df["impact_now"] * (1.0 + 0.1) + (3 - (df["age"] - 26).abs()*0.05)
         PLAYERS = df
     return PLAYERS

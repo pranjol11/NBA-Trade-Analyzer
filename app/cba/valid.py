@@ -1,4 +1,4 @@
-from typing import List, Tuple
+from typing import List
 from ..schemas import TradeSide, LegalityIssue, ValidateResponse
 from ..services import value as pv
 from ..util.money import salary_band_max
@@ -8,6 +8,12 @@ ROSTER_MAX = 15
 
 def validate_trade(sides: List[TradeSide]) -> ValidateResponse:
     issues: List[LegalityIssue] = []
+
+    if len(sides) < 2:
+        issues.append(LegalityIssue(
+            code="TRADE_SIDES",
+            message="A trade must include at least two teams"
+        ))
 
     # 1) Salary matching (super rough; assumes both teams are > cap)
     for side in sides:
@@ -21,11 +27,28 @@ def validate_trade(sides: List[TradeSide]) -> ValidateResponse:
                 details={"incoming": incoming, "allowed": limit, "outgoing": outgoing}
             ))
 
-    # 2) Roster size (approx: count players swapped; needs roster table later)
-    # For MVP, we just ensure each side isn't receiving negative players.
+    # 2) MVP input sanity checks
     for side in sides:
-        if len(side.players_in) < 0:
-            issues.append(LegalityIssue(code="ROSTER_COUNT", message=f"{side.team}: invalid player counts"))
+        if not side.team or not side.team.strip():
+            issues.append(LegalityIssue(code="TEAM_REQUIRED", message="Each side must include a team code"))
+
+        if set(side.players_out) & set(side.players_in):
+            issues.append(LegalityIssue(
+                code="PLAYER_OVERLAP",
+                message=f"{side.team}: same player appears in players_out and players_in"
+            ))
+
+        if len(side.players_out) != len(set(side.players_out)):
+            issues.append(LegalityIssue(
+                code="PLAYER_DUPLICATE",
+                message=f"{side.team}: duplicate player ids in players_out"
+            ))
+
+        if len(side.players_in) != len(set(side.players_in)):
+            issues.append(LegalityIssue(
+                code="PLAYER_DUPLICATE",
+                message=f"{side.team}: duplicate player ids in players_in"
+            ))
 
     # 3) Stepien Rule (cannot be without a 1st in consecutive future years)
     # MVP placeholder: if a side sends 2+ firsts (marked by value_units>=2.5) we warn.
