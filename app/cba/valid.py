@@ -2,12 +2,15 @@ from typing import List
 from ..schemas import TradeSide, LegalityIssue, ValidateResponse
 from ..services import value as pv
 from ..util.money import salary_band_max
-
-ROSTER_MIN = 13
-ROSTER_MAX = 15
+from ..config import settings
 
 def validate_trade(sides: List[TradeSide]) -> ValidateResponse:
     issues: List[LegalityIssue] = []
+    players_df = pv._load_players()
+
+    # Snapshot current team payroll and roster count from players.csv.
+    team_salary = players_df.groupby("team", dropna=False)["salary"].sum().to_dict()
+    team_count = players_df.groupby("team", dropna=False).size().to_dict()
 
     if len(sides) < 2:
         issues.append(LegalityIssue(
@@ -15,22 +18,53 @@ def validate_trade(sides: List[TradeSide]) -> ValidateResponse:
             message="A trade must include at least two teams"
         ))
 
-    # 1) Salary matching (super rough; assumes both teams are > cap)
+    # 1) Salary legality
+    # If post-trade payroll is at/below cap, allow salary absorption.
+    # Otherwise apply matching-band rule.
     for side in sides:
+        team_code = (side.team or "").strip().upper()
+        current_team_salary = float(team_salary.get(team_code, 0.0))
+
         outgoing = pv.sum_salary(side.players_out)
         incoming = pv.sum_salary(side.players_in)
-        limit = salary_band_max(outgoing)
-        if incoming > limit:
-            issues.append(LegalityIssue(
-                code="SALARY_MATCH_FAIL",
-                message=f"{side.team}: incoming ${incoming:,.0f} exceeds allowed ${limit:,.0f}",
-                details={"incoming": incoming, "allowed": limit, "outgoing": outgoing}
-            ))
+
+        post_trade_salary = current_team_salary - outgoing + incoming
+        if post_trade_salary > settings.salary_cap:
+            limit = salary_band_max(outgoing)
+            if incoming > limit:
+                issues.append(LegalityIssue(
+                    code="SALARY_MATCH_FAIL",
+                    message=f"{side.team}: incoming ${incoming:,.0f} exceeds allowed ${limit:,.0f}",
+                    details={
+                        "incoming": incoming,
+                        "allowed": limit,
+                        "outgoing": outgoing,
+                        "team_payroll_post_trade": post_trade_salary,
+                        "salary_cap": settings.salary_cap,
+                    }
+                ))
 
     # 2) MVP input sanity checks
     for side in sides:
         if not side.team or not side.team.strip():
             issues.append(LegalityIssue(code="TEAM_REQUIRED", message="Each side must include a team code"))
+
+        team_code = side.team.strip().upper() if side.team else ""
+        current_team_count = int(team_count.get(team_code, 0))
+        post_trade_count = current_team_count - len(side.players_out) + len(side.players_in)
+        if post_trade_count < settings.roster_min or post_trade_count > settings.roster_max:
+            issues.append(LegalityIssue(
+                code="ROSTER_COUNT",
+                message=(
+                    f"{side.team}: post-trade roster count {post_trade_count} is outside "
+                    f"{settings.roster_min}-{settings.roster_max}"
+                ),
+                details={
+                    "post_trade_count": post_trade_count,
+                    "allowed_min": settings.roster_min,
+                    "allowed_max": settings.roster_max,
+                }
+            ))
 
         if set(side.players_out) & set(side.players_in):
             issues.append(LegalityIssue(
