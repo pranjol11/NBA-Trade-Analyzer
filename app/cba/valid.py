@@ -8,9 +8,11 @@ def validate_trade(sides: List[TradeSide]) -> ValidateResponse:
     issues: List[LegalityIssue] = []
     players_df = pv._load_players()
 
-    # Snapshot current team payroll and roster count from players.csv.
-    team_salary = players_df.groupby("team", dropna=False)["salary"].sum().to_dict()
-    team_count = players_df.groupby("team", dropna=False).size().to_dict()
+    # Two-way contracts don't count toward the cap or the standard roster limit.
+    standard = players_df[~players_df["two_way"].astype(bool)]
+    # Prefer official team payrolls: they include dead money that per-player sums miss.
+    team_salary = {**standard.groupby("team", dropna=False)["salary"].sum().to_dict(), **pv.team_payrolls()}
+    team_count = standard.groupby("team", dropna=False).size().to_dict()
 
     if len(sides) < 2:
         issues.append(LegalityIssue(
@@ -30,19 +32,43 @@ def validate_trade(sides: List[TradeSide]) -> ValidateResponse:
 
         post_trade_salary = current_team_salary - outgoing + incoming
         if post_trade_salary > settings.salary_cap:
-            limit = salary_band_max(outgoing)
+            limit = salary_band_max(outgoing, post_trade_salary)
             if incoming > limit:
+                above_apron = post_trade_salary > settings.first_apron
                 issues.append(LegalityIssue(
                     code="SALARY_MATCH_FAIL",
-                    message=f"{side.team}: incoming ${incoming:,.0f} exceeds allowed ${limit:,.0f}",
+                    message=(
+                        f"{side.team}: incoming ${incoming:,.0f} exceeds allowed ${limit:,.0f}"
+                        + (" (over the first apron: max 100% of outgoing)" if above_apron else "")
+                    ),
                     details={
                         "incoming": incoming,
                         "allowed": limit,
                         "outgoing": outgoing,
                         "team_payroll_post_trade": post_trade_salary,
                         "salary_cap": settings.salary_cap,
+                        "first_apron": settings.first_apron,
                     }
                 ))
+
+            # Second-apron teams can't combine salaries to take back a bigger contract.
+            if post_trade_salary > settings.second_apron and len(side.players_out) > 1:
+                biggest_single = max(pv.sum_salary([pid]) for pid in side.players_out)
+                if incoming > biggest_single:
+                    issues.append(LegalityIssue(
+                        code="SECOND_APRON_AGGREGATION",
+                        message=(
+                            f"{side.team}: over the second apron after the trade, so it can't aggregate "
+                            f"salaries; incoming ${incoming:,.0f} exceeds its largest outgoing "
+                            f"salary ${biggest_single:,.0f}"
+                        ),
+                        details={
+                            "incoming": incoming,
+                            "largest_outgoing": biggest_single,
+                            "team_payroll_post_trade": post_trade_salary,
+                            "second_apron": settings.second_apron,
+                        }
+                    ))
 
     # 2) MVP input sanity checks
     for side in sides:
@@ -51,8 +77,13 @@ def validate_trade(sides: List[TradeSide]) -> ValidateResponse:
 
         team_code = side.team.strip().upper() if side.team else ""
         current_team_count = int(team_count.get(team_code, 0))
-        post_trade_count = current_team_count - len(side.players_out) + len(side.players_in)
-        if post_trade_count < settings.roster_min or post_trade_count > settings.roster_max:
+        net_change = len(side.players_in) - len(side.players_out)
+        post_trade_count = current_team_count + net_change
+        # Offseason rosters legitimately sit above the max (training camp), so only
+        # flag trades that push a roster further out of range.
+        too_many = net_change > 0 and post_trade_count > settings.roster_max
+        too_few = net_change < 0 and post_trade_count < settings.roster_min
+        if too_many or too_few:
             issues.append(LegalityIssue(
                 code="ROSTER_COUNT",
                 message=(
