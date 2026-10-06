@@ -533,10 +533,6 @@ export default function App() {
             <ResultPanel />
           </section>
         )}
-
-        <p className="mt-10 text-xs text-muted text-center">
-          Hosted on a free tier, so the first request after a while can take up to a minute while the server wakes up.
-        </p>
       </main>
     </div>
   )
