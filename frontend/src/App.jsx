@@ -1,9 +1,29 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react'
 
-// NBA Team abbreviations used for team input suggestions
-const TEAM_CODES = [
-  'ATL','BOS','BKN','CHA','CHI','CLE','DAL','DEN','DET','GSW','HOU','IND','LAC','LAL','MEM','MIA','MIL','MIN','NOP','NYK','OKC','ORL','PHI','PHX','POR','SAC','SAS','TOR','UTA','WAS'
-]
+// NBA team ids (stats.nba.com), used for logos and team input suggestions
+const TEAM_IDS = {
+  ATL: 1610612737, BOS: 1610612738, BKN: 1610612751, CHA: 1610612766, CHI: 1610612741, CLE: 1610612739,
+  DAL: 1610612742, DEN: 1610612743, DET: 1610612765, GSW: 1610612744, HOU: 1610612745, IND: 1610612754,
+  LAC: 1610612746, LAL: 1610612747, MEM: 1610612763, MIA: 1610612748, MIL: 1610612749, MIN: 1610612750,
+  NOP: 1610612740, NYK: 1610612752, OKC: 1610612760, ORL: 1610612753, PHI: 1610612755, PHX: 1610612756,
+  POR: 1610612757, SAC: 1610612758, SAS: 1610612759, TOR: 1610612761, UTA: 1610612762, WAS: 1610612764,
+}
+const TEAM_CODES = Object.keys(TEAM_IDS).sort()
+
+const TeamLogo = ({ team, size = 20 }) => {
+  const id = TEAM_IDS[(team || '').toUpperCase()]
+  if (!id) return null
+  return (
+    <img
+      src={`https://cdn.nba.com/logos/nba/${id}/global/L/logo.svg`}
+      alt={`${team} logo`}
+      width={size}
+      height={size}
+      className="inline-block shrink-0"
+      onError={(e) => { e.currentTarget.style.display = 'none' }}
+    />
+  )
+}
 
 const presets = {
   'Custom': {
@@ -12,10 +32,10 @@ const presets = {
       { team: '', players_out: [], players_in: [], picks_out: [], picks_in: [] }
     ]
   },
-  'LeBron ↔ Curry swap': {
+  'Curry ↔ Tatum swap': {
     sides: [
-      { team: 'LAL', players_out: ['LeBron James'], players_in: ['Stephen Curry'], picks_out: [], picks_in: [] },
-      { team: 'GSW', players_out: ['Stephen Curry'], players_in: ['LeBron James'], picks_out: [], picks_in: [] }
+      { team: 'GSW', players_out: ['Stephen Curry'], players_in: ['Jayson Tatum'], picks_out: [], picks_in: [] },
+      { team: 'BOS', players_out: ['Jayson Tatum'], players_in: ['Stephen Curry'], picks_out: [], picks_in: [] }
     ]
   },
   'BOS ↔ BKN pick swap': {
@@ -24,6 +44,123 @@ const presets = {
       { team: 'BKN', players_out: [], players_in: [], picks_out: ['brk_2027_1st'], picks_in: ['bos_2027_1st'] }
     ]
   }
+}
+
+// Open/close state for a dropdown that closes on outside click or Escape.
+const useDropdown = () => {
+  const [open, setOpen] = useState(false)
+  const ref = useRef(null)
+
+  useEffect(() => {
+    if (!open) return
+    const close = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false) }
+    const onKey = (e) => { if (e.key === 'Escape') setOpen(false) }
+    document.addEventListener('mousedown', close)
+    document.addEventListener('keydown', onKey)
+    return () => {
+      document.removeEventListener('mousedown', close)
+      document.removeEventListener('keydown', onKey)
+    }
+  }, [open])
+
+  return [open, setOpen, ref]
+}
+
+const formatSalary = (s) => (s > 0 ? `$${(s / 1e6).toFixed(1)}M` : '—')
+
+// "brk_2027_1st" -> "BKN 2027 1st"
+const formatPick = (id) => {
+  const [prefix, year, round] = String(id).split('_')
+  if (!year || !round) return String(id)
+  const team = { BRK: 'BKN' }[prefix.toUpperCase()] || prefix.toUpperCase()
+  return `${team} ${year} ${round}`
+}
+
+const TeamSelect = ({ value, onChange, disabled }) => {
+  const [open, setOpen, ref] = useDropdown()
+
+  return (
+    <div className="relative" ref={ref}>
+      <button
+        type="button"
+        onClick={() => setOpen(o => !o)}
+        disabled={disabled}
+        className="flex items-center gap-2 text-sm border rounded px-2 py-1 w-28 bg-white disabled:bg-gray-100 disabled:text-gray-500"
+      >
+        <TeamLogo team={value} size={18} />
+        <span className={value ? '' : 'text-gray-400'}>{value || 'Select'}</span>
+        <span className="ml-auto text-gray-400 text-xs">▾</span>
+      </button>
+      {open && !disabled && (
+        <div className="absolute z-10 mt-1 w-28 max-h-64 overflow-y-auto bg-white border rounded shadow text-sm">
+          {TEAM_CODES.map(code => (
+            <button
+              type="button"
+              key={code}
+              onClick={() => { onChange(code); setOpen(false) }}
+              className={`flex items-center gap-2 w-full text-left px-2 py-1 hover:bg-indigo-50 ${code === value ? 'bg-indigo-50 font-semibold' : ''}`}
+            >
+              <TeamLogo team={code} size={18} />{code}
+            </button>
+          ))}
+        </div>
+      )}
+    </div>
+  )
+}
+
+// Chips for chosen assets plus a dropdown of the team's remaining ones.
+// options: [{ value, label, detail }]
+const AssetPicker = ({ tokens, options, onAdd, onRemove, locked, placeholder, emptyText, formatToken = (t) => t }) => {
+  const [open, setOpen, ref] = useDropdown()
+  const remaining = options.filter(o => !tokens.includes(o.value))
+  const disabled = locked || options.length === 0
+
+  return (
+    <div>
+      {tokens.length > 0 && (
+        <div className="flex flex-wrap gap-2 mb-2">
+          {tokens.map((t, i) => (
+            <span key={t} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm bg-gray-100 border font-medium">
+              <span>{formatToken(t)}</span>
+              {!locked && (
+                <button type="button" onClick={() => onRemove(i)} className="text-gray-500 hover:text-red-600 text-base leading-none">×</button>
+              )}
+            </span>
+          ))}
+        </div>
+      )}
+      {!locked && (
+        <div className="relative" ref={ref}>
+          <button
+            type="button"
+            onClick={() => setOpen(o => !o)}
+            disabled={disabled}
+            className="flex items-center w-full text-sm border rounded px-2 py-1 bg-white text-left disabled:bg-gray-100"
+          >
+            <span className="text-gray-400">{options.length === 0 ? emptyText : placeholder}</span>
+            <span className="ml-auto text-gray-400 text-xs">▾</span>
+          </button>
+          {open && !disabled && (
+            <div className="absolute z-10 mt-1 w-full max-h-64 overflow-y-auto bg-white border rounded shadow text-sm">
+              {remaining.length === 0 && <div className="px-2 py-1 text-gray-400">All added</div>}
+              {remaining.map(o => (
+                <button
+                  type="button"
+                  key={o.value}
+                  onClick={() => { onAdd(o.value); setOpen(false) }}
+                  className="flex items-center gap-2 w-full text-left px-2 py-1 hover:bg-indigo-50"
+                >
+                  <span>{o.label}</span>
+                  {o.detail && <span className="ml-auto text-xs text-gray-500">{o.detail}</span>}
+                </button>
+              ))}
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  )
 }
 
 const Badge = ({ color = 'gray', children }) => (
@@ -59,7 +196,32 @@ export default function App() {
   }
   const [activePreset, setActivePreset] = useState('Custom')
   const isLocked = activePreset !== 'Custom'
-  
+
+  const [teamAssets, setTeamAssets] = useState({}) // team code -> { players, picks }
+  const selectedTeams = builder.sides.map(s => s?.team || '').join(',')
+  useEffect(() => {
+    selectedTeams.split(',').forEach(code => {
+      if (!code || teamAssets[code]) return
+      fetch(`${API_BASE}/teams/${code}/assets`)
+        .then(r => r.json())
+        .then(data => setTeamAssets(prev => ({ ...prev, [code]: data })))
+        .catch(() => {})
+    })
+  }, [selectedTeams])
+
+  const playerOptions = (code) => (teamAssets[code]?.players || []).map(p => ({
+    value: p.name,
+    label: p.name,
+    detail: `${formatSalary(p.salary)}${p.two_way ? ' · two-way' : ''}`,
+  }))
+  const pickOptions = (code) => (teamAssets[code]?.picks || []).map(p => ({
+    value: p.pick_id,
+    label: `${p.year} ${p.round === 1 ? '1st' : '2nd'}${p.original_team !== code ? ` (via ${p.original_team})` : ''}`,
+    detail: p.protection ? p.protection.replace(/^top(\d+)$/, 'top-$1 protected') : '',
+  }))
+  const emptyText = (code, kind) =>
+    !code ? '' : !teamAssets[code] ? 'Loading…' : `No ${kind} available`
+
 
   const parsePayload = () => {
     try { return JSON.parse(jsonText) } catch (e) { throw new Error('Invalid JSON: ' + e.message) }
@@ -85,10 +247,18 @@ export default function App() {
   const onEvaluate = () => postJSON('/trade/evaluate', currentPayload(), 'evaluate')
 
   // ------- Small helpers for Builder UI -------
-  const updateSide = (idx, patch) => {
+  // Switching teams drops what the old team was giving up (and the mirrored receives).
+  const changeTeam = (idx, team) => {
     setBuilder(prev => {
+      const side = prev.sides[idx]
+      if (side.team === team) return prev
       const next = JSON.parse(JSON.stringify(prev))
-      next.sides[idx] = { ...next.sides[idx], ...patch }
+      const other = next.sides[idx === 0 ? 1 : 0]
+      if (other) {
+        other.players_in = other.players_in.filter(p => !side.players_out.includes(p))
+        other.picks_in = other.picks_in.filter(p => !side.picks_out.includes(p))
+      }
+      next.sides[idx] = { ...next.sides[idx], team, players_out: [], picks_out: [] }
       return next
     })
   }
@@ -182,7 +352,9 @@ export default function App() {
         <tbody>
           {grades.map((g, i) => (
             <tr key={i} className="border-t">
-              <td className="py-2 pr-4 font-medium">{g.team}</td>
+              <td className="py-2 pr-4 font-medium">
+                <span className="inline-flex items-center gap-2"><TeamLogo team={g.team} />{g.team}</span>
+              </td>
               <td className="py-2 pr-4">{Number(g.score_raw).toFixed(2)}</td>
               <td className="py-2 pr-4">
                 <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${g.letter === 'A' ? 'bg-emerald-100 text-emerald-800' : g.letter === 'B' ? 'bg-green-100 text-green-800' : g.letter === 'C' ? 'bg-yellow-100 text-yellow-800' : g.letter === 'D' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800'}`}>{g.letter}</span>
@@ -219,6 +391,7 @@ export default function App() {
       return (
         <div className="space-y-3">
           <Legality data={result.legality} />
+          {result.legality?.issues?.length > 0 && <IssuesList issues={result.legality.issues} />}
           {Array.isArray(result.grades) && result.grades.length > 0 ? (
             <GradesTable grades={result.grades} />
           ) : (
@@ -228,56 +401,6 @@ export default function App() {
       )
     }
     return <pre className="bg-gray-50 border rounded p-3 text-xs overflow-auto h-72 whitespace-pre-wrap">{JSON.stringify(result, null, 2)}</pre>
-  }
-
-  // TokenEditor: small reusable input with chips and optional suggestions
-  function TokenEditor({ tokens, onRemove, onAdd, onSuggest, suggestions = [], onPickSuggest, locked=false }) {
-    const [value, setValue] = useState('')
-    const [localSuggestions, setLocalSuggestions] = useState([])
-    useEffect(() => {
-      if (!onSuggest) return
-      const h = setTimeout(async () => {
-        const items = await onSuggest(value)
-        setLocalSuggestions(items || [])
-      }, 180)
-      return () => clearTimeout(h)
-    }, [value])
-    const handlePickSuggest = (s) => {
-      onPickSuggest?.(s.name || s)
-      setLocalSuggestions([])
-      setValue('')
-    }
-    return (
-      <div>
-        <div className="flex flex-wrap gap-2 mb-2">
-          {tokens.map((t, i) => (
-            <span key={i} className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full text-sm bg-gray-100 border font-medium">
-              <span>{t}</span>
-              {!locked && (
-                <button type="button" onClick={()=>onRemove(i)} className="text-gray-500 hover:text-red-600 text-base leading-none">×</button>
-              )}
-            </span>
-          ))}
-        </div>
-        <div className="relative">
-          {!locked && (
-            <div className="flex gap-2">
-              <input value={value} onChange={(e)=>setValue(e.target.value)} className="flex-1 text-sm border rounded px-2 py-1"/>
-              <button type="button" onClick={()=>{onAdd(value); setValue('')}} className="px-2 py-1 text-sm rounded border bg-white hover:bg-gray-50">Add</button>
-            </div>
-          )}
-          {!locked && localSuggestions.length > 0 && (
-            <div className="absolute z-10 mt-1 w-full bg-white border rounded shadow" onMouseDown={(e)=> e.preventDefault()}>
-              {localSuggestions.map((s, i) => (
-                <button type="button" key={i} onClick={()=>handlePickSuggest(s)} className="w-full text-left px-2 py-1 text-sm hover:bg-indigo-50">
-                  {s.name ? `${s.name} · ${s.team}` : String(s)}
-                </button>
-              ))}
-            </div>
-          )}
-        </div>
-      </div>
-    )
   }
 
   return (
@@ -303,7 +426,7 @@ export default function App() {
                 <div className="text-xs bg-gray-100 rounded border px-1.5 py-0.5">Mode:</div>
                 <div className="inline-flex rounded-lg overflow-hidden border">
                   <button type="button" className={`px-2 py-1 text-sm ${activeTab==='builder'?'bg-indigo-600 text-white':'bg-white'}`} onClick={()=>setActiveTab('builder')}>Builder</button>
-                  <button type="button" className={`px-2 py-1 text-sm ${activeTab==='json'?'bg-indigo-600 text-white':'bg-white'}`} onClick={()=>setActiveTab('json')}>JSON</button>
+                  <button type="button" className={`px-2 py-1 text-sm ${activeTab==='json'?'bg-indigo-600 text-white':'bg-white'}`} onClick={()=>{ if (activeTab !== 'json') setJsonText(JSON.stringify(builder, null, 2)); setActiveTab('json') }}>JSON</button>
                 </div>
               </div>
             )}
@@ -312,125 +435,45 @@ export default function App() {
               <div className="space-y-4">
                 <div className="rounded-lg border p-4">
                   <div className="grid grid-cols-2 gap-6">
-                    {/* Team 1 */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <label className="text-sm font-semibold text-gray-700">Team 1</label>
-                        <div className="relative">
-                          <input 
-                            value={builder.sides[0]?.team || ''} 
-                            onChange={(e)=>updateSide(0,{team:e.target.value.toUpperCase()})} 
-                            className="text-sm border rounded px-2 py-1 w-24"
-                            disabled={isLocked}
-                          />
-                          {!isLocked && builder.sides[0]?.team && builder.sides[0].team.length > 0 && (
-                            (()=>{
-                              const q = builder.sides[0].team.toUpperCase();
-                              const matches = TEAM_CODES.filter(t=>t.startsWith(q) && t!==q).slice(0,5);
-                              return matches.length ? (
-                                <div className="absolute z-10 mt-1 w-24 bg-white border rounded shadow text-xs">
-                                  {matches.map(m => (
-                                    <button type="button" key={m} onClick={()=>updateSide(0,{team:m})} className="block w-full text-left px-2 py-1 hover:bg-indigo-50">
-                                      {m}
-                                    </button>
-                                  ))}
-                                </div>
-                              ) : null
-                            })()
-                          )}
+                    {[0, 1].map(idx => {
+                      const side = builder.sides[idx] || {}
+                      const code = side.team || ''
+                      return (
+                        <div key={idx}>
+                          <div className="flex items-center gap-2 mb-3">
+                            <label className="text-sm font-semibold text-gray-700">Team {idx + 1}</label>
+                            <TeamSelect value={code} onChange={(team)=>changeTeam(idx, team)} disabled={isLocked} />
+                          </div>
+                          <div className="space-y-3">
+                            <div>
+                              <div className="text-sm font-medium text-gray-600 mb-1">Gives Up Players</div>
+                              <AssetPicker
+                                tokens={side.players_out || []}
+                                options={playerOptions(code)}
+                                onAdd={(val)=>addToken(idx,'players_out',val)}
+                                onRemove={(i)=>removeToken(idx,'players_out',i)}
+                                locked={isLocked}
+                                placeholder="Add a player"
+                                emptyText={emptyText(code, 'players')}
+                              />
+                            </div>
+                            <div>
+                              <div className="text-sm font-medium text-gray-600 mb-1">Gives Up Picks</div>
+                              <AssetPicker
+                                tokens={side.picks_out || []}
+                                options={pickOptions(code)}
+                                onAdd={(val)=>addToken(idx,'picks_out',val)}
+                                onRemove={(i)=>removeToken(idx,'picks_out',i)}
+                                locked={isLocked}
+                                placeholder="Add a pick"
+                                emptyText={emptyText(code, 'picks')}
+                                formatToken={formatPick}
+                              />
+                            </div>
+                          </div>
                         </div>
-                      </div>
-                      <div className="space-y-3">
-                        <div>
-                          <div className="text-sm font-medium text-gray-600 mb-1">Gives Up Players</div>
-                          <TokenEditor
-                            tokens={builder.sides[0]?.players_out || []}
-                            onRemove={(i)=>removeToken(0,'players_out',i)}
-                            onAdd={(val)=>addToken(0,'players_out',val)}
-                            onSuggest={async (q) => {
-                              if (!q || q.length < 2) return [];
-                              try {
-                                const res = await fetch(`${API_BASE}/players/search?q=${encodeURIComponent(q)}&limit=8`)
-                                return await res.json()
-                              } catch {
-                                return []
-                              }
-                            }}
-                            onPickSuggest={(name)=>addToken(0,'players_out',name)}
-                            locked={isLocked}
-                          />
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-600 mb-1">Gives Up Picks</div>
-                          <TokenEditor
-                            tokens={builder.sides[0]?.picks_out || []}
-                            onRemove={(i)=>removeToken(0,'picks_out',i)}
-                            onAdd={(val)=>addToken(0,'picks_out',val)}
-                            locked={isLocked}
-                          />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Team 2 */}
-                    <div>
-                      <div className="flex items-center gap-2 mb-3">
-                        <label className="text-sm font-semibold text-gray-700">Team 2</label>
-                        <div className="relative">
-                          <input 
-                            value={builder.sides[1]?.team || ''} 
-                            onChange={(e)=>updateSide(1,{team:e.target.value.toUpperCase()})} 
-                            className="text-sm border rounded px-2 py-1 w-24"
-                            disabled={isLocked}
-                          />
-                          {!isLocked && builder.sides[1]?.team && builder.sides[1].team.length > 0 && (
-                            (()=>{
-                              const q = builder.sides[1].team.toUpperCase();
-                              const matches = TEAM_CODES.filter(t=>t.startsWith(q) && t!==q).slice(0,5);
-                              return matches.length ? (
-                                <div className="absolute z-10 mt-1 w-24 bg-white border rounded shadow text-xs">
-                                  {matches.map(m => (
-                                    <button type="button" key={m} onClick={()=>updateSide(1,{team:m})} className="block w-full text-left px-2 py-1 hover:bg-indigo-50">
-                                      {m}
-                                    </button>
-                                  ))}
-                                </div>
-                              ) : null
-                            })()
-                          )}
-                        </div>
-                      </div>
-                      <div className="space-y-3">
-                        <div>
-                          <div className="text-sm font-medium text-gray-600 mb-1">Gives Up Players</div>
-                          <TokenEditor
-                            tokens={builder.sides[1]?.players_out || []}
-                            onRemove={(i)=>removeToken(1,'players_out',i)}
-                            onAdd={(val)=>addToken(1,'players_out',val)}
-                            onSuggest={async (q) => {
-                              if (!q || q.length < 2) return [];
-                              try {
-                                const res = await fetch(`${API_BASE}/players/search?q=${encodeURIComponent(q)}&limit=8`)
-                                return await res.json()
-                              } catch {
-                                return []
-                              }
-                            }}
-                            onPickSuggest={(name)=>addToken(1,'players_out',name)}
-                            locked={isLocked}
-                          />
-                        </div>
-                        <div>
-                          <div className="text-sm font-medium text-gray-600 mb-1">Gives Up Picks</div>
-                          <TokenEditor
-                            tokens={builder.sides[1]?.picks_out || []}
-                            onRemove={(i)=>removeToken(1,'picks_out',i)}
-                            onAdd={(val)=>addToken(1,'picks_out',val)}
-                            locked={isLocked}
-                          />
-                        </div>
-                      </div>
-                    </div>
+                      )
+                    })}
                   </div>
                 </div>
                 {isLocked && <p className="text-xs text-gray-500">Preset trade locked. Choose "Custom" to build your own.</p>}

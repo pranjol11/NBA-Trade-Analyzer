@@ -5,6 +5,8 @@ from app.cba.valid import validate_trade
 from app.services.grading import score_team, letter_grade
 from app.util.resolve import normalize_payload
 from app.services import value as pv
+from app.services.picks import _load_picks
+import pandas as pd
 from fastapi.middleware.cors import CORSMiddleware
 import os
 
@@ -52,6 +54,31 @@ def players_search(q: str = Query("", min_length=1), limit: int = 10):
         return results
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
+
+@app.get("/teams/{team}/assets")
+def team_assets(team: str):
+    """A team's current players (by salary) and the draft picks it owns."""
+    code = team.strip().upper()
+    players = pv._load_players()
+    roster = players[players["team"] == code].sort_values("salary", ascending=False)
+    picks = _load_picks()
+    owned = picks[picks["current_team"] == code].sort_values(["year", "round"])
+    return {
+        "players": [
+            {"name": str(r["name"]), "salary": float(r["salary"]), "two_way": bool(r["two_way"])}
+            for _, r in roster.iterrows()
+        ],
+        "picks": [
+            {
+                "pick_id": str(r["pick_id"]),
+                "year": int(r["year"]),
+                "round": int(r["round"]),
+                "original_team": str(r["original_team"]),
+                "protection": "" if pd.isna(r["prot_type"]) or r["prot_type"] == "none" else str(r["prot_type"]),
+            }
+            for _, r in owned.iterrows()
+        ],
+    }
 
 @app.post("/trade/validate")
 def trade_validate(payload: TradePayloadInput):

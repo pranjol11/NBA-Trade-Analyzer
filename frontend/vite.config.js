@@ -16,6 +16,10 @@ export default defineConfig({
         target: 'http://localhost:8000',
         changeOrigin: true,
       },
+      '/teams': {
+        target: 'http://localhost:8000',
+        changeOrigin: true,
+      },
       '/players': {
         target: 'http://localhost:8000',
         changeOrigin: true,
