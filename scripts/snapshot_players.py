@@ -1,4 +1,6 @@
-# Usage: python scripts/snapshot_players.py --season 2026-27 --salaries data/raw_salaries_2026_27.csv
+# Usage: python scripts/snapshot_players.py --season 2026-27 --salaries data/raw_salaries_2026_27.csv \
+#            --ratings data/ratings_2k27.csv
+# The ratings CSV (team, name, ovr, pot) comes from 2kratings.com team pages.
 import argparse
 import re
 import sys
@@ -86,21 +88,27 @@ def load_salaries(path):
     return out.dropna(subset=["salary"])
 
 
-def match_salaries(df, salaries):
-    by_name = salaries.drop_duplicates(subset="key", keep="first").set_index("key")["salary"]
-    salary = df["key"].map(by_name)
+def match_column(df, source, col):
+    """Look up source[col] for each player by normalized name (source needs key, team, col)."""
+    by_name = source.drop_duplicates(subset="key", keep="first").set_index("key")[col]
+    values = df["key"].map(by_name)
 
     # Fallback for nicknames ("Ron Holland" vs "Ronald Holland II"): same last name on the same team, if unique.
-    sal = salaries[~salaries["key"].isin(df["key"])].dropna(subset=["team"])
-    sal = sal.assign(last=sal["key"].str.split().str[-1])
-    sal = sal.drop_duplicates(subset=["last", "team", "key"])
-    sal = sal[~sal.duplicated(subset=["last", "team"], keep=False)]
-    by_last_team = sal.set_index(["last", "team"])["salary"]
+    src = source[~source["key"].isin(df["key"])].dropna(subset=["team"])
+    src = src.assign(last=src["key"].str.split().str[-1])
+    src = src.drop_duplicates(subset=["last", "team", "key"])
+    src = src[~src.duplicated(subset=["last", "team"], keep=False)]
+    by_last_team = src.set_index(["last", "team"])[col]
     fallback = pd.Series(
         [by_last_team.get((k.split()[-1] if k else "", t)) for k, t in zip(df["key"], df["team"])],
-        index=df.index, dtype=float,
+        index=df.index, dtype=values.dtype,
     )
-    return salary.fillna(fallback)
+    return values.fillna(fallback)
+
+
+def load_ratings(path):
+    r = pd.read_csv(path)
+    return r.assign(key=r["name"].map(norm_name))
 
 
 def compute_impact_now(df):
@@ -119,6 +127,7 @@ def main():
     ap.add_argument("--season", required=True, help="roster season, e.g. 2026-27")
     ap.add_argument("--stats-season", help="season for per-game stats (default: the season before --season)")
     ap.add_argument("--salaries", required=True, type=Path)
+    ap.add_argument("--ratings", type=Path, help="2K ratings CSV (team, name, ovr, pot)")
     ap.add_argument("--out", default=Path("data/players.csv"), type=Path)
     args = ap.parse_args()
     stats_season = args.stats_season or prev_season(args.season)
@@ -132,15 +141,23 @@ def main():
 
     df = rosters.merge(stats, on="player_id", how="left")
     df["key"] = df["name"].map(norm_name)
-    df["salary"] = match_salaries(df, salaries)
+    df["salary"] = match_column(df, salaries, "salary")
+    if args.ratings:
+        ratings = load_ratings(args.ratings)
+        df["ovr"] = match_column(df, ratings, "ovr")
+        df["pot"] = match_column(df, ratings, "pot")
+    else:
+        df["ovr"], df["pot"] = None, None
 
     df["impact_now"] = compute_impact_now(df)
     rookie = df["impact_now"].isna() & df["draft_pick"].notna()
     df.loc[rookie, "impact_now"] = draft_slot_impact(df.loc[rookie, "draft_pick"])
     df["years_left"] = guess_years_left(df["age"])
 
-    df_out = df[["player_id", "name", "team", "salary", "age", "impact_now", "years_left", "two_way"]] \
-        .drop_duplicates(subset="player_id").sort_values("player_id")
+    df_out = df[[
+        "player_id", "name", "team", "salary", "age", "impact_now", "ovr", "pot",
+        "draft_pick", "years_left", "two_way",
+    ]].drop_duplicates(subset="player_id").sort_values("player_id")
 
     args.out.parent.mkdir(parents=True, exist_ok=True)
     df_out.to_csv(args.out, index=False, encoding="utf-8")
@@ -150,6 +167,8 @@ def main():
     print(f"Wrote {len(df_out)} players ({args.season} rosters, {stats_season} stats) to {args.out}")
     print(f"  {int(rookie.sum())} without NBA stats valued by draft slot")
     print(f"  {len(no_stats)} without stats or a draft slot (mostly undrafted) -> impact 0")
+    if args.ratings:
+        print(f"  {int(df_out.ovr.notna().sum())} matched to 2K ratings")
     print(f"  {len(no_salary)} without a salary match"
           + (f", e.g. {', '.join(no_salary.name.head(10))}" if len(no_salary) else ""))
 

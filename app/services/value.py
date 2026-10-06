@@ -31,15 +31,38 @@ def _load_players():
         df["salary"] = df["salary"].fillna(0.0)
         df["impact_now"] = df["impact_now"].fillna(0.0)
         df["age"] = df["age"].fillna(26.0)
-        if "two_way" not in df.columns:
-            df["two_way"] = False
+        for col, default in [("two_way", False), ("ovr", np.nan), ("pot", None)]:
+            if col not in df.columns:
+                df[col] = default
 
         max_impact = df["impact_now"].max()
+        top_ovr = df["ovr"].max() if df["ovr"].notna().any() else 97
         df["trade_value"] = [
-            impact_to_value(i, a, max_impact) for i, a in zip(df["impact_now"], df["age"])
+            ovr_to_value(projected_ovr(o, p, a), a, top_ovr) if pd.notna(o) else impact_to_value(i, a, max_impact)
+            for o, p, a, i in zip(df["ovr"], df["pot"], df["age"], df["impact_now"])
         ]
         PLAYERS = df
     return PLAYERS
+
+# 2K ratings model. Players without a 2K rating fall back to the box-score model below.
+REPLACEMENT_OVR = 65  # about a two-way / end-of-bench player: worth ~0
+POTENTIAL_CEILING = {"A+": 95, "A": 90, "A-": 86, "B+": 82, "B": 77, "B-": 73}
+
+def upside_weight(age: float) -> float:
+    """Share of the gap to a player's 2K ceiling credited now: ~90% at 19, none from 25."""
+    return min(0.9, max(0.0, 0.15 * (25 - age)))
+
+def projected_ovr(ovr: float, pot, age: float) -> float:
+    ceiling = POTENTIAL_CEILING.get(pot, ovr)
+    return ovr + upside_weight(age) * max(0.0, ceiling - ovr)
+
+def decline_factor(age: float) -> float:
+    return 1.0 if age <= 28 else max(0.4, 1 - 0.06 * (age - 28))
+
+def ovr_to_value(ovr: float, age: float, top_ovr: float = 97) -> float:
+    """0-100 trade value from a 2K overall; the 2.5 power makes stars outweigh depth."""
+    share = min(1.0, max(0.0, (ovr - REPLACEMENT_OVR) / (top_ovr - REPLACEMENT_OVR)))
+    return round(100 * share ** 2.5 * decline_factor(age), 1)
 
 def age_factor(age: float) -> float:
     """Younger players carry more future years; value fades after 28."""

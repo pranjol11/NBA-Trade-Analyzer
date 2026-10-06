@@ -1,10 +1,10 @@
+import math
 import re
 from pathlib import Path
 from typing import List, Tuple
 
 import pandas as pd
 
-from . import value as pv
 from ..config import settings
 
 PICKS = None
@@ -18,7 +18,10 @@ TEAM_STRENGTH = {
 
 AVG_STRENGTH = sum(TEAM_STRENGTH.values()) / len(TEAM_STRENGTH)
 PROSPECT_DISCOUNT = 0.8  # a pick is a lottery ticket, not a proven player
-DRAFTEE_AGE = 20
+
+def draftee_value(slot: float) -> float:
+    # Fit to current 19-20-year-old draftees' 2K-based trade values: ~54 at #1, ~33 at #5, ~16 by #15, ~12 late.
+    return 12 + 42 * math.exp(-(slot - 1) / 6)
 
 def _load_picks():
     global PICKS
@@ -44,8 +47,8 @@ def pick_value(row) -> float:
     year = int(row["year"])
     years_out = max(0, year - settings.next_draft_year)
     slot = projected_slot(row["original_team"], year)
-    value = pv.impact_to_value(float(pv.draft_slot_impact(slot)), DRAFTEE_AGE)
-    value *= PROSPECT_DISCOUNT * (1 - settings.discount_rate) ** years_out * protection_factor(row["prot_type"])
+    value = draftee_value(slot) * PROSPECT_DISCOUNT
+    value *= (1 - settings.discount_rate) ** years_out * protection_factor(row["prot_type"])
     return round(value, 1)
 
 def pick_label(row) -> str:
