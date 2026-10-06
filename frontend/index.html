@@ -4,9 +4,35 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>NBA Trade Analyzer</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link href="https://fonts.googleapis.com/css2?family=Barlow+Condensed:wght@500;600;700&family=Barlow:wght@400;500;600&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+      tailwind.config = {
+        theme: {
+          extend: {
+            fontFamily: {
+              display: ['"Barlow Condensed"', 'sans-serif'],
+              sans: ['Barlow', 'system-ui', 'sans-serif'],
+            },
+            colors: {
+              paper: '#f4f1ea',
+              card: '#fbfaf6',
+              ink: '#16140f',
+              rule: '#d8d2c4',
+              muted: '#6f695c',
+              accent: '#b8432a',
+              win: '#1d6b3a',
+              even: '#7a6a12',
+              loss: '#a3261b',
+            },
+          },
+        },
+      }
+    </script>
   </head>
-  <body class="bg-gray-50 text-gray-900">
+  <body class="bg-paper text-ink font-sans antialiased">
     <div id="root"></div>
     <script type="module" src="/src/main.jsx"></script>
   </body>
