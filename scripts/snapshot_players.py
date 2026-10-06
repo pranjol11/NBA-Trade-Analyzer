@@ -1,14 +1,17 @@
 # Usage: python scripts/snapshot_players.py --season 2026-27 --salaries data/raw_salaries_2026_27.csv
 import argparse
 import re
+import sys
 import time
 import unicodedata
 from pathlib import Path
 
-import numpy as np
 import pandas as pd
 from nba_api.stats.endpoints import commonteamroster, leaguedashplayerstats
 from nba_api.stats.static import teams as teams_static
+
+sys.path.insert(0, str(Path(__file__).resolve().parents[1]))
+from app.services.value import draft_slot_impact  # noqa: E402
 
 NAME_SUFFIXES = {"jr", "sr", "ii", "iii", "iv", "v"}
 # Basketball-Reference team codes -> NBA codes
@@ -104,11 +107,6 @@ def compute_impact_now(df):
     imp = (df["PTS"] + df["REB"] + df["AST"] + df["STL"] + df["BLK"]) / 10.0 \
           - df["TOV"] / 5.0 + df["FG3M"] / 10.0
     return imp.round(3)
-
-
-def draft_slot_impact(pick):
-    # Fit to the 2023-25 classes' rookie seasons: ~2.4 for #1, ~1.5 for #8, ~0.85 late 1st / 2nd round.
-    return (0.8 + 1.6 * np.exp(-(pick - 1) / 8)).round(3)
 
 
 def guess_years_left(age):

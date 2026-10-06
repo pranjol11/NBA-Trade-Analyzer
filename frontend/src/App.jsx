@@ -138,7 +138,7 @@ const AssetPicker = ({ tokens, options, onAdd, onRemove, locked, placeholder, em
             disabled={disabled}
             className="flex items-center w-full text-sm border rounded px-2 py-1 bg-white text-left disabled:bg-gray-100"
           >
-            <span className="text-gray-400">{options.length === 0 ? emptyText : placeholder}</span>
+            <span className="text-gray-400">{(options.length === 0 ? emptyText : placeholder) || ' '}</span>
             <span className="ml-auto text-gray-400 text-xs">▾</span>
           </button>
           {open && !disabled && (
@@ -162,6 +162,31 @@ const AssetPicker = ({ tokens, options, onAdd, onRemove, locked, placeholder, em
     </div>
   )
 }
+
+const LETTER_STYLES = {
+  A: 'bg-emerald-100 text-emerald-800',
+  B: 'bg-green-100 text-green-800',
+  C: 'bg-yellow-100 text-yellow-800',
+  D: 'bg-orange-100 text-orange-800',
+  F: 'bg-red-100 text-red-800',
+}
+
+const AssetValues = ({ assets = [], total = 0 }) => (
+  assets.length === 0 ? <span className="text-gray-400">Nothing</span> : (
+    <div className="space-y-0.5">
+      {assets.map((a, i) => (
+        <div key={i} className="flex gap-3 justify-between max-w-xs">
+          <span>{a.name}</span><span className="text-gray-600 tabular-nums">{a.value.toFixed(1)}</span>
+        </div>
+      ))}
+      {assets.length > 1 && (
+        <div className="flex gap-3 justify-between max-w-xs border-t pt-0.5 font-medium">
+          <span>Total</span><span className="tabular-nums">{total.toFixed(1)}</span>
+        </div>
+      )}
+    </div>
+  )
+)
 
 const Badge = ({ color = 'gray', children }) => (
   <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-medium bg-${color}-100 text-${color}-800 border border-${color}-200`}>{children}</span>
@@ -212,12 +237,12 @@ export default function App() {
   const playerOptions = (code) => (teamAssets[code]?.players || []).map(p => ({
     value: p.name,
     label: p.name,
-    detail: `${formatSalary(p.salary)}${p.two_way ? ' · two-way' : ''}`,
+    detail: `value ${p.value.toFixed(0)} · ${formatSalary(p.salary)}${p.two_way ? ' · two-way' : ''}`,
   }))
   const pickOptions = (code) => (teamAssets[code]?.picks || []).map(p => ({
     value: p.pick_id,
     label: `${p.year} ${p.round === 1 ? '1st' : '2nd'}${p.original_team !== code ? ` (via ${p.original_team})` : ''}`,
-    detail: p.protection ? p.protection.replace(/^top(\d+)$/, 'top-$1 protected') : '',
+    detail: [p.protection.replace(/^top(\d+)$/, 'top-$1 protected'), `value ${p.value.toFixed(0)}`].filter(Boolean).join(' · '),
   }))
   const emptyText = (code, kind) =>
     !code ? '' : !teamAssets[code] ? 'Loading…' : `No ${kind} available`
@@ -342,26 +367,23 @@ export default function App() {
         <thead>
           <tr className="text-left text-gray-600">
             <th className="py-2 pr-4">Team</th>
-            <th className="py-2 pr-4">Score</th>
-            <th className="py-2 pr-4">Letter</th>
-            <th className="py-2 pr-4">Impact Now</th>
-            <th className="py-2 pr-4">Future</th>
-            <th className="py-2 pr-4">Picks</th>
+            <th className="py-2 pr-4">Grade</th>
+            <th className="py-2 pr-4">Receives</th>
+            <th className="py-2 pr-4">Sends</th>
           </tr>
         </thead>
         <tbody>
           {grades.map((g, i) => (
-            <tr key={i} className="border-t">
+            <tr key={i} className="border-t align-top">
               <td className="py-2 pr-4 font-medium">
                 <span className="inline-flex items-center gap-2"><TeamLogo team={g.team} />{g.team}</span>
               </td>
-              <td className="py-2 pr-4">{Number(g.score_raw).toFixed(2)}</td>
-              <td className="py-2 pr-4">
-                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold ${g.letter === 'A' ? 'bg-emerald-100 text-emerald-800' : g.letter === 'B' ? 'bg-green-100 text-green-800' : g.letter === 'C' ? 'bg-yellow-100 text-yellow-800' : g.letter === 'D' ? 'bg-orange-100 text-orange-800' : 'bg-red-100 text-red-800'}`}>{g.letter}</span>
+              <td className="py-2 pr-4 whitespace-nowrap">
+                <span className={`inline-flex items-center px-2 py-0.5 rounded text-xs font-semibold mr-2 ${LETTER_STYLES[g.letter[0]] || LETTER_STYLES.F}`}>{g.letter}</span>
+                <span className="font-semibold">{Math.round(g.grade)}</span><span className="text-gray-400">/100</span>
               </td>
-              <td className="py-2 pr-4">{g.breakdown?.impact_now?.toFixed?.(2) ?? g.breakdown?.impact_now}</td>
-              <td className="py-2 pr-4">{g.breakdown?.future_value?.toFixed?.(2) ?? g.breakdown?.future_value}</td>
-              <td className="py-2 pr-4">{g.breakdown?.pick_value?.toFixed?.(2) ?? g.breakdown?.pick_value}</td>
+              <td className="py-2 pr-4"><AssetValues assets={g.assets_in} total={g.value_in} /></td>
+              <td className="py-2 pr-4"><AssetValues assets={g.assets_out} total={g.value_out} /></td>
             </tr>
           ))}
         </tbody>
@@ -372,9 +394,6 @@ export default function App() {
   const ResultPanel = () => {
     if (error) return (
       <div className="p-3 rounded border bg-red-50 border-red-200 text-sm text-red-800">{error}</div>
-    )
-    if (result == null) return (
-      <div className="p-3 rounded border bg-gray-50 border-gray-200 text-sm text-gray-600">Grades will appear here…</div>
     )
     if (typeof result === 'string') {
       return <pre className="bg-gray-50 border rounded p-3 text-xs overflow-auto h-72 whitespace-pre">{result}</pre>
@@ -499,9 +518,11 @@ export default function App() {
             </div>
           </Card>
 
-          <Card title="Grades">
-            <ResultPanel />
-          </Card>
+          {(result != null || error) && (
+            <Card title="Grades">
+              <ResultPanel />
+            </Card>
+          )}
         </div>
 
         <div className="text-sm text-amber-600 bg-amber-50 border border-amber-200 rounded-lg px-4 py-3 mt-6 mb-4 text-center">

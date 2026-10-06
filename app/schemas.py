@@ -31,11 +31,18 @@ class ValidateResponse(BaseModel):
     legal: bool
     issues: List[LegalityIssue] = Field(default_factory=list)
 
+class AssetValue(BaseModel):
+    name: str
+    value: float
+
 class TeamGrade(BaseModel):
     team: str
-    score_raw: float
+    grade: float  # 0-100, 50 = even trade
     letter: str
-    breakdown: Dict[str, float]
+    value_in: float
+    value_out: float
+    assets_in: List[AssetValue]
+    assets_out: List[AssetValue]
 
 class EvaluateResponse(BaseModel):
     legality: ValidateResponse

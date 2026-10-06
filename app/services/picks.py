@@ -1,6 +1,11 @@
-import pandas as pd
+import re
 from pathlib import Path
+from typing import List, Tuple
 
+import pandas as pd
+
+from . import value as pv
+from ..config import settings
 
 PICKS = None
 
@@ -12,7 +17,8 @@ TEAM_STRENGTH = {
 }
 
 AVG_STRENGTH = sum(TEAM_STRENGTH.values()) / len(TEAM_STRENGTH)
-K = 0.04  # tuning parameter: value changes ~4% per spot
+PROSPECT_DISCOUNT = 0.8  # a pick is a lottery ticket, not a proven player
+DRAFTEE_AGE = 20
 
 def _load_picks():
     global PICKS
@@ -20,14 +26,32 @@ def _load_picks():
         PICKS = pd.read_csv(Path("data/picks.csv"))
     return PICKS
 
-def value_picks(pick_ids):
+def projected_slot(team: str, year: int) -> float:
+    """Expected draft slot: worst team ~#3 next year, drifting toward the middle further out."""
+    strength = TEAM_STRENGTH.get(team, AVG_STRENGTH)
+    years_out = max(0, year - settings.next_draft_year)
+    weight = 0.85 * 0.8 ** years_out  # lottery luck + team quality changing over time
+    return AVG_STRENGTH + (strength - AVG_STRENGTH) * weight
+
+def protection_factor(prot) -> float:
+    m = re.match(r"top(\d+)", str(prot))
+    if not m:
+        return 0.7 if prot == "split" else 1.0
+    n = int(m.group(1))
+    return 0.85 if n <= 4 else 0.7 if n <= 10 else 0.55
+
+def pick_value(row) -> float:
+    year = int(row["year"])
+    years_out = max(0, year - settings.next_draft_year)
+    slot = projected_slot(row["original_team"], year)
+    value = pv.impact_to_value(float(pv.draft_slot_impact(slot)), DRAFTEE_AGE)
+    value *= PROSPECT_DISCOUNT * (1 - settings.discount_rate) ** years_out * protection_factor(row["prot_type"])
+    return round(value, 1)
+
+def pick_label(row) -> str:
+    rnd = "1st" if int(row["round"]) == 1 else "2nd"
+    return f"{row['original_team']} {int(row['year'])} {rnd}"
+
+def pick_values(pick_ids) -> List[Tuple[str, float]]:
     df = _load_picks()
-    total = 0.0
-    for _, row in df[df.pick_id.isin(pick_ids)].iterrows():
-        base = row["value_units"]
-        team = row["original_team"]
-        strength = TEAM_STRENGTH.get(team, AVG_STRENGTH)
-        # Lower strength = worse team = better pick
-        adj = base * (1 + K * (AVG_STRENGTH - strength))
-        total += adj
-    return total
+    return [(pick_label(r), pick_value(r)) for _, r in df[df.pick_id.isin(pick_ids)].iterrows()]

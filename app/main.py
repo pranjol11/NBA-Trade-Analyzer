@@ -1,11 +1,11 @@
 from fastapi import FastAPI, HTTPException, Query
 from fastapi.responses import RedirectResponse
-from app.schemas import TradePayload, EvaluateResponse, TeamGrade, TradePayloadInput
+from app.schemas import TradePayload, EvaluateResponse, TeamGrade, TradePayloadInput, AssetValue
 from app.cba.valid import validate_trade
-from app.services.grading import score_team, letter_grade
+from app.services.grading import grade_side, letter_grade
 from app.util.resolve import normalize_payload
 from app.services import value as pv
-from app.services.picks import _load_picks
+from app.services.picks import _load_picks, pick_value
 import pandas as pd
 from fastapi.middleware.cors import CORSMiddleware
 import os
@@ -65,12 +65,18 @@ def team_assets(team: str):
     owned = picks[picks["current_team"] == code].sort_values(["year", "round"])
     return {
         "players": [
-            {"name": str(r["name"]), "salary": float(r["salary"]), "two_way": bool(r["two_way"])}
+            {
+                "name": str(r["name"]),
+                "salary": float(r["salary"]),
+                "two_way": bool(r["two_way"]),
+                "value": float(r["trade_value"]),
+            }
             for _, r in roster.iterrows()
         ],
         "picks": [
             {
                 "pick_id": str(r["pick_id"]),
+                "value": pick_value(r),
                 "year": int(r["year"]),
                 "round": int(r["round"]),
                 "original_team": str(r["original_team"]),
@@ -101,9 +107,8 @@ def trade_evaluate(payload: TradePayloadInput):
     legality = validate_trade(canonical.sides)
 
     grades = []
-    # Build quick lookup of players/picks movement for each side
     for side in canonical.sides:
-        score, breakdown = score_team(
+        grade, value_in, value_out, assets_in, assets_out = grade_side(
             players_out=side.players_out,
             players_in=side.players_in,
             picks_out=side.picks_out,
@@ -111,9 +116,12 @@ def trade_evaluate(payload: TradePayloadInput):
         )
         grades.append(TeamGrade(
             team=side.team,
-            score_raw=round(score, 3),
-            letter=letter_grade(score),
-            breakdown={k: round(v, 3) for k, v in breakdown.items()}
+            grade=round(grade, 1),
+            letter=letter_grade(grade),
+            value_in=round(value_in, 1),
+            value_out=round(value_out, 1),
+            assets_in=[AssetValue(name=n, value=v) for n, v in assets_in],
+            assets_out=[AssetValue(name=n, value=v) for n, v in assets_out],
         ))
 
     return EvaluateResponse(legality=legality, grades=grades)

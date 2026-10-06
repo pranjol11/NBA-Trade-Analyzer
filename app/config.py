@@ -3,10 +3,8 @@ import os
 
 class Settings(BaseModel):
     env: str = os.getenv("ENV", "dev")
-    alpha_now: float = float(os.getenv("GRADING_ALPHA_NOW", 1.0))
-    beta_future: float = float(os.getenv("GRADING_BETA_FUTURE", 0.7))
-    gamma_pick: float = float(os.getenv("GRADING_GAMMA_PICK", 0.6))
-    discount_rate: float = float(os.getenv("DISCOUNT_RATE", 0.07))
+    discount_rate: float = float(os.getenv("DISCOUNT_RATE", 0.07))  # per year, for future picks
+    next_draft_year: int = int(os.getenv("NEXT_DRAFT_YEAR", 2027))
     # 2026-27 figures (pr.nba.com); the TPE amount is indexed to the cap each season.
     salary_cap: float = float(os.getenv("SALARY_CAP", 164_961_000))
     first_apron: float = float(os.getenv("FIRST_APRON", 209_015_000))
