@@ -3,6 +3,14 @@ from pathlib import Path
 from typing import Dict, Any
 
 PLAYERS = None
+TEAM_PAYROLLS = None
+
+def team_payrolls() -> Dict[str, float]:
+    global TEAM_PAYROLLS
+    if TEAM_PAYROLLS is None:
+        path = Path("data/team_payrolls.csv")
+        TEAM_PAYROLLS = pd.read_csv(path).set_index("team")["payroll"].to_dict() if path.exists() else {}
+    return TEAM_PAYROLLS
 
 def _load_players():
     global PLAYERS
@@ -22,6 +30,8 @@ def _load_players():
         df["salary"] = df["salary"].fillna(0.0)
         df["impact_now"] = df["impact_now"].fillna(0.0)
         df["age"] = df["age"].fillna(26.0)
+        if "two_way" not in df.columns:
+            df["two_way"] = False
 
         df["value_future_3y"] = df["impact_now"] * (1.0 + 0.1) + (3 - (df["age"] - 26).abs()*0.05)
         PLAYERS = df
